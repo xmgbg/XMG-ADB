@@ -51,8 +51,8 @@ XMG_ADB 是一款面向 Android 开发、测试和设备运维场景的 Windows 
 
 ### 直接运行
 
-1. 下载或克隆本仓库。
-2. 运行 `dist/XMG_ADB.exe`。
+1. 从 [GitHub Releases](https://github.com/xmgbg/XMG-ADB/releases) 下载 `XMG_ADB.exe`，或按照下文从源码构建。
+2. 双击运行 `XMG_ADB.exe`。
 3. 若顶部显示“未找到 ADB”，进入「设置」选择本机 `adb.exe`。
 4. 连接设备并在设备端确认 USB 调试授权。
 
@@ -133,7 +133,7 @@ XMG-ADB/
 │   ├── PagesAppsFiles.cs             # APK、文件与应用管理
 │   ├── PagesToolsHistorySettings.cs  # 工具、历史和设置
 │   └── Ui.cs                         # 通用 WPF 控件与样式
-├── dist/                             # 发布产物
+├── dist/                             # 本地构建产物（不提交到源码仓库）
 ├── app.manifest                      # Windows 清单与 DPI 配置
 ├── XMG_ADB.csproj                    # MSBuild 项目文件
 ├── build.ps1                         # 构建脚本
@@ -166,7 +166,7 @@ XMG-ADB/
 ## 🗺️ 优化路线
 
 - [x] 统一窗口、命名空间、程序集、配置目录及构建产物名称
-- [ ] 增加 `.gitignore`，停止跟踪本地构建产物，并通过 Release 发布 EXE
+- [x] 增加 `.gitignore`，停止跟踪本地构建产物，并通过 Release 发布 EXE
 - [x] 引入 `.csproj` 与可重复的 CI 构建流程
 - [ ] 扩充命令超时、异常退出、设备切换和解析边界测试
 - [ ] 为耗时操作增加取消令牌与更明确的进度反馈

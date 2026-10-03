@@ -1,0 +1,19 @@
+# IDE and local settings
+.vs/
+.idea/
+.vscode/
+*.suo
+*.user
+
+# Build output
+bin/
+obj/
+dist/*
+!dist/.gitkeep
+*.pdb
+
+# Logs and operating-system files
+*.log
+.DS_Store
+Thumbs.db
+desktop.ini
