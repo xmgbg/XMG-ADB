@@ -27,85 +27,18 @@ namespace XMG_ADB
 
         public DevicesPage()
         {
-            var root = new Grid { Margin = Ui.PagePadding };
-            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-
-            var heading = new StackPanel();
-            Ui.Heading("设备连接", "管理 USB 与网络设备，当前选择会同步到所有功能页面。", heading);
-            root.Children.Add(heading);
-
-            var connectGrid = new Grid();
-            connectGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            connectGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            var fields = new StackPanel { Orientation = Orientation.Horizontal };
-            _address = Ui.Combo(260);
-            _address.IsEditable = true;
+            var root = Ui.LoadView("DevicesPage");
+            Content = root;
+            _address = Ui.Find<ComboBox>(root, "Address");
+            _port = Ui.Find<TextBox>(root, "Port");
+            _pairAddress = Ui.Find<TextBox>(root, "PairAddress");
+            _pairCode = Ui.Find<TextBox>(root, "PairCode");
+            _list = Ui.Find<ListView>(root, "Devices");
+            _details = Ui.Find<TextBlock>(root, "Details");
             foreach (string recent in _state.Settings.RecentDevices) _address.Items.Add(recent);
             if (_address.Items.Count > 0) _address.SelectedIndex = 0;
             else _address.Text = "192.168.1.100";
-            _port = Ui.Input("5555", 86);
-            var connect = Ui.Button("连接", true);
-            connect.Click += async delegate { await ConnectAsync(); };
-            fields.Children.Add(_address);
-            fields.Children.Add(_port);
-            fields.Children.Add(connect);
-            connectGrid.Children.Add(fields);
-            var tools = new StackPanel { Orientation = Orientation.Horizontal };
-            var refresh = Ui.Button("刷新设备", false);
-            refresh.Click += async delegate { await RefreshAsync(); };
-            var restart = Ui.Button("重启 ADB", false);
-            restart.Margin = new Thickness(0);
-            restart.Click += async delegate { await RestartAdbAsync(); };
-            tools.Children.Add(refresh);
-            tools.Children.Add(restart);
-            Grid.SetColumn(tools, 1);
-            connectGrid.Children.Add(tools);
-            var connectPanel = Ui.Panel(connectGrid, new Thickness(0, 0, 0, 12));
-            Grid.SetRow(connectPanel, 1);
-            root.Children.Add(connectPanel);
-
-            var pairGrid = new Grid();
-            pairGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            pairGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            var pairFields = new StackPanel { Orientation = Orientation.Horizontal };
-            pairFields.Children.Add(Ui.Text("无线配对", 13, "TextPrimaryBrush", FontWeights.SemiBold));
-            pairFields.Children[pairFields.Children.Count - 1].SetValue(FrameworkElement.MarginProperty, new Thickness(0, 0, 14, 0));
-            _pairAddress = Ui.Input("192.168.1.100:37000", 220);
-            _pairCode = Ui.Input("六位配对码", 120);
-            var pair = Ui.Button("配对", false);
-            pair.Click += async delegate { await PairAsync(); };
-            pairFields.Children.Add(_pairAddress);
-            pairFields.Children.Add(_pairCode);
-            pairFields.Children.Add(pair);
-            pairGrid.Children.Add(pairFields);
-            var qrHelp = Ui.Button("QR 配对说明", false);
-            qrHelp.Margin = new Thickness(0);
-            qrHelp.Click += delegate
-            {
-                MessageBox.Show("ADB 命令行支持配对码流程。设备端选择“使用配对码配对”，把配对地址和六位代码填入本页。\n\nAndroid Studio 的 QR 模式依赖 mDNS 配对服务，不是静态二维码。此工具会优先提供兼容性更高的配对码流程。", "无线调试配对", MessageBoxButton.OK, MessageBoxImage.Information);
-            };
-            Grid.SetColumn(qrHelp, 1);
-            pairGrid.Children.Add(qrHelp);
-            var pairPanel = Ui.Panel(pairGrid, new Thickness(0, 0, 0, 12));
-            Grid.SetRow(pairPanel, 2);
-            root.Children.Add(pairPanel);
-
-            var body = new Grid();
-            body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(310) });
-            _list = new ListView { ItemsSource = _state.Devices, SelectionMode = SelectionMode.Extended, Margin = new Thickness(0, 0, 12, 0) };
-            _list.SetResourceReference(Control.BackgroundProperty, "SurfaceBrush");
-            _list.SetResourceReference(Control.ForegroundProperty, "TextPrimaryBrush");
-            _list.SetResourceReference(Control.BorderBrushProperty, "BorderBrush");
-            var view = new GridView();
-            view.Columns.Add(new GridViewColumn { Header = "设备", Width = 190, DisplayMemberBinding = new Binding("Model") });
-            view.Columns.Add(new GridViewColumn { Header = "地址 / 序列号", Width = 230, DisplayMemberBinding = new Binding("Serial") });
-            view.Columns.Add(new GridViewColumn { Header = "状态", Width = 90, DisplayMemberBinding = new Binding("StateText") });
-            view.Columns.Add(new GridViewColumn { Header = "连接方式", Width = 90, DisplayMemberBinding = new Binding("Address") });
-            _list.View = view;
+            _list.ItemsSource = _state.Devices;
             _list.SelectionChanged += async delegate
             {
                 var selected = _list.SelectedItem as DeviceInfo;
@@ -113,34 +46,14 @@ namespace XMG_ADB
                 _state.SelectedDevice = selected;
                 await LoadDetailsAsync(selected);
             };
-            body.Children.Add(_list);
-
-            var detailStack = new StackPanel();
-            detailStack.Children.Add(Ui.Text("设备详情", 16, "TextPrimaryBrush", FontWeights.SemiBold));
-            _details = Ui.Text("选择一台设备查看详细信息。", 12, "TextSecondaryBrush", FontWeights.Normal);
-            _details.Margin = new Thickness(0, 14, 0, 18);
-            _details.FontFamily = new FontFamily("Consolas");
-            detailStack.Children.Add(_details);
-            var disconnect = Ui.Button("断开当前设备", false);
-            disconnect.Click += async delegate { await DisconnectAsync(); };
-            var copy = Ui.Button("复制序列号", false);
-            copy.Margin = new Thickness(0, 8, 0, 0);
-            copy.Click += delegate
-            {
-                if (_state.SelectedDevice != null) Clipboard.SetText(_state.SelectedDevice.Serial);
-            };
-            var batch = Ui.Button("断开所选网络设备", false);
-            batch.Margin = new Thickness(0, 8, 0, 0);
-            batch.Click += async delegate { await BatchDisconnectAsync(); };
-            detailStack.Children.Add(disconnect);
-            detailStack.Children.Add(copy);
-            detailStack.Children.Add(batch);
-            var detailPanel = Ui.Panel(detailStack, new Thickness(0));
-            Grid.SetColumn(detailPanel, 1);
-            body.Children.Add(detailPanel);
-            Grid.SetRow(body, 3);
-            root.Children.Add(body);
-            Content = root;
+            Ui.Find<Button>(root, "Connect").Click += async delegate { await ConnectAsync(); };
+            Ui.Find<Button>(root, "Refresh").Click += async delegate { await RefreshAsync(); };
+            Ui.Find<Button>(root, "Restart").Click += async delegate { await RestartAdbAsync(); };
+            Ui.Find<Button>(root, "Pair").Click += async delegate { await PairAsync(); };
+            Ui.Find<Button>(root, "Help").Click += delegate { MessageBox.Show("在 Android 无线调试设置中选择使用配对码配对，填入设备显示的配对地址和六位配对码。配对后使用连接端口连接设备。", "无线配对"); };
+            Ui.Find<Button>(root, "Disconnect").Click += async delegate { await DisconnectAsync(); };
+            Ui.Find<Button>(root, "Batch").Click += async delegate { await BatchDisconnectAsync(); };
+            Ui.Find<Button>(root, "Copy").Click += delegate { if (_state.SelectedDevice != null) Clipboard.SetText(_state.SelectedDevice.Serial); };
         }
 
         private async Task ConnectAsync()
@@ -248,69 +161,21 @@ namespace XMG_ADB
 
         public LogcatPage()
         {
-            var root = new Grid { Margin = Ui.PagePadding };
-            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-            root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(28) });
-            var heading = new StackPanel();
-            Ui.Heading("实时日志", "使用 threadtime 格式显示日志，支持级别、Tag、进程和文本过滤。", heading);
-            root.Children.Add(heading);
-
-            var toolbar = new WrapPanel { VerticalAlignment = VerticalAlignment.Center };
-            _level = Ui.Combo(110);
+            var root = Ui.LoadView("LogcatPage");
+            Content = root;
+            _level = Ui.Find<ComboBox>(root, "Level");
+            _tag = Ui.Find<TextBox>(root, "Tag");
+            _processFilter = Ui.Find<TextBox>(root, "Process");
+            _search = Ui.Find<TextBox>(root, "Search");
+            _log = Ui.Find<RichTextBox>(root, "Log");
+            _stats = Ui.Find<TextBlock>(root, "Stats");
             foreach (string item in new[] { "Verbose", "Debug", "Info", "Warn", "Error", "Fatal", "Silent" }) _level.Items.Add(item);
             _level.SelectedIndex = 1;
-            _tag = Ui.Input("Tag", 140);
-            _processFilter = Ui.Input("PID / 包名", 140);
-            _search = Ui.Input("搜索文本", 180);
-            var start = Ui.Button("开始", true);
-            start.Click += async delegate { await StartAsync(); };
-            var pause = Ui.Button("暂停 / 继续", false);
-            pause.Click += delegate { _paused = !_paused; _state.SetStatus(_paused ? "日志显示已暂停" : "日志显示已继续", false); };
-            var clear = Ui.Button("清空", false);
-            clear.Click += async delegate { await ClearAsync(); };
-            var export = Ui.Button("导出", false);
-            export.Click += async delegate { await ExportAsync(false); };
-            var cache = Ui.Button("导出设备缓存", false);
-            cache.Click += async delegate { await ExportAsync(true); };
-            toolbar.Children.Add(_level);
-            toolbar.Children.Add(_tag);
-            toolbar.Children.Add(_processFilter);
-            toolbar.Children.Add(_search);
-            toolbar.Children.Add(start);
-            toolbar.Children.Add(pause);
-            toolbar.Children.Add(clear);
-            toolbar.Children.Add(export);
-            toolbar.Children.Add(cache);
-            var toolPanel = Ui.Panel(toolbar, new Thickness(0, 0, 0, 12));
-            Grid.SetRow(toolPanel, 1);
-            root.Children.Add(toolPanel);
-
-            _log = new RichTextBox
-            {
-                IsReadOnly = true,
-                FontFamily = new FontFamily("Consolas"),
-                FontSize = 12,
-                BorderThickness = new Thickness(1),
-                Padding = new Thickness(12),
-                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
-                IsUndoEnabled = false,
-                Document = new FlowDocument { PagePadding = new Thickness(0), LineHeight = 17 }
-            };
-            _log.SetResourceReference(Control.BackgroundProperty, "LogBackgroundBrush");
-            _log.SetResourceReference(Control.ForegroundProperty, "LogTextBrush");
-            _log.SetResourceReference(Control.BorderBrushProperty, "BorderBrush");
-            Grid.SetRow(_log, 2);
-            root.Children.Add(_log);
-
-            _stats = Ui.Text("未启动", 11, "TextSecondaryBrush", FontWeights.Normal);
-            _stats.HorizontalAlignment = HorizontalAlignment.Right;
-            Grid.SetRow(_stats, 3);
-            root.Children.Add(_stats);
-            Content = root;
-
+            Ui.Find<Button>(root, "Start").Click += async delegate { await StartAsync(); };
+            Ui.Find<Button>(root, "Pause").Click += delegate { _paused = !_paused; _state.SetStatus(_paused ? "日志显示已暂停" : "日志显示已继续", false); };
+            Ui.Find<Button>(root, "Clear").Click += async delegate { await ClearAsync(); };
+            Ui.Find<Button>(root, "Export").Click += async delegate { await ExportAsync(false); };
+            Ui.Find<Button>(root, "Cache").Click += async delegate { await ExportAsync(true); };
             _flushTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(120) };
             _flushTimer.Tick += FlushLines;
             _flushTimer.Start();
