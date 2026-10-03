@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -24,6 +25,7 @@ namespace XMG_ADB
         private TextBox _performancePackage;
         private TextBox _performanceOutput;
         private DispatcherTimer _performanceTimer;
+        private CancellationTokenSource _performanceCancellation;
         private bool _performanceBusy;
         private ComboBox _scriptPreset;
         private TextBox _scriptEditor;
@@ -100,7 +102,7 @@ namespace XMG_ADB
             var toolbar = new StackPanel { Orientation = Orientation.Horizontal };
             _performancePackage = Ui.Input("可选包名", 240);
             var start = Ui.Button("开始监控", true);
-            start.Click += delegate { StartPerformance(); };
+            start.Click += async delegate { await StartPerformanceAsync(); };
             var stop = Ui.Button("停止", false);
             stop.Click += delegate { StopPerformance(); };
             toolbar.Children.Add(_performancePackage);
@@ -298,26 +300,51 @@ namespace XMG_ADB
             _captureStatus.Text = result.Success ? "已保存：" + local : AppState.Explain(result);
         }
 
-        private async void StartPerformance()
+        private async Task StartPerformanceAsync()
         {
             if (RequireDevice("性能监控") == null) return;
+            StopPerformance();
+            _performanceCancellation = new CancellationTokenSource();
             if (_performanceTimer == null)
             {
                 _performanceTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
-                _performanceTimer.Tick += async delegate { await RefreshPerformanceAsync(); };
+                _performanceTimer.Tick += async delegate { await RefreshPerformanceSafeAsync(); };
             }
             _performanceTimer.Start();
-            await RefreshPerformanceAsync();
-            _state.SetStatus("性能监控已启动", false);
+            await RefreshPerformanceSafeAsync();
+            if (_performanceCancellation != null && !_performanceCancellation.IsCancellationRequested)
+                _state.SetStatus("性能监控已启动", false);
         }
 
         private void StopPerformance()
         {
             if (_performanceTimer != null) _performanceTimer.Stop();
+            if (_performanceCancellation != null)
+            {
+                _performanceCancellation.Cancel();
+                _performanceCancellation.Dispose();
+                _performanceCancellation = null;
+            }
             _state.SetStatus("性能监控已停止", false);
         }
 
-        private async Task RefreshPerformanceAsync()
+        private async Task RefreshPerformanceSafeAsync()
+        {
+            CancellationTokenSource cancellation = _performanceCancellation;
+            if (cancellation == null || cancellation.IsCancellationRequested) return;
+            try
+            {
+                await RefreshPerformanceAsync(cancellation.Token);
+            }
+            catch (Exception ex)
+            {
+                _performanceOutput.Text = "性能监控失败：" + ex.Message;
+                StopPerformance();
+                _state.SetStatus("性能监控失败", false);
+            }
+        }
+
+        private async Task RefreshPerformanceAsync(CancellationToken cancellationToken)
         {
             if (_performanceBusy) return;
             DeviceInfo device = _state.SelectedDevice;
@@ -327,9 +354,10 @@ namespace XMG_ADB
             {
                 string package = _performancePackage.Text.Trim();
                 string command = "shell \"echo '[CPU]'; dumpsys cpuinfo | head -n 16; echo; echo '[MEMORY]'; " +
-                    ((!string.IsNullOrWhiteSpace(package) && package != "可选包名") ? "dumpsys meminfo " + package + " | head -n 30" : "cat /proc/meminfo | head -n 8") +
+                    ((!string.IsNullOrWhiteSpace(package) && package != "可选包名") ? "dumpsys meminfo " + AdbClient.ShellQuote(package) + " | head -n 30" : "cat /proc/meminfo | head -n 8") +
                     "; echo; echo '[LOAD]'; cat /proc/loadavg\"";
-                CommandResult result = await _state.Adb.RunAsync(command, device.Serial, 12000);
+                CommandResult result = await _state.Adb.RunAsync(command, device.Serial, 12000, cancellationToken);
+                if (result.Cancelled) return;
                 _performanceOutput.Text = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + Environment.NewLine + Environment.NewLine + result.Combined;
             }
             finally { _performanceBusy = false; }
