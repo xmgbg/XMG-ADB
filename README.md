@@ -70,7 +70,9 @@ XMG_ADB 是一款面向 Android 开发、测试和设备运维场景的 Windows 
 
 ## 🔨 源码构建
 
-项目不依赖 NuGet 包或 Visual Studio 工程文件，构建脚本会直接调用系统自带的 .NET Framework C# 编译器。
+项目不依赖 NuGet 包，`build.ps1` 会调用 MSBuild 构建 `XMG_ADB.csproj`。
+
+源码构建推荐安装 .NET Framework 4.8 Developer Pack 或 Visual Studio Build Tools；仅运行发布程序不需要开发工具。
 
 ```powershell
 git clone https://github.com/xmgbg/XMG-ADB.git
@@ -133,6 +135,7 @@ XMG-ADB/
 │   └── Ui.cs                         # 通用 WPF 控件与样式
 ├── dist/                             # 发布产物
 ├── app.manifest                      # Windows 清单与 DPI 配置
+├── XMG_ADB.csproj                    # MSBuild 项目文件
 ├── build.ps1                         # 构建脚本
 └── README.md
 ```
@@ -164,7 +167,7 @@ XMG-ADB/
 
 - [x] 统一窗口、命名空间、程序集、配置目录及构建产物名称
 - [ ] 增加 `.gitignore`，停止跟踪本地构建产物，并通过 Release 发布 EXE
-- [ ] 引入 `.csproj` 与可重复的 CI 构建流程
+- [x] 引入 `.csproj` 与可重复的 CI 构建流程
 - [ ] 扩充命令超时、异常退出、设备切换和解析边界测试
 - [ ] 为耗时操作增加取消令牌与更明确的进度反馈
 - [ ] 对高风险操作增加二次确认、目标设备提示和命令审计
