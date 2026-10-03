@@ -19,14 +19,15 @@ namespace XMG_ADB
         private readonly TextBlock _statusText;
         private readonly ProgressBar _busyBar;
         private readonly Dictionary<string, UserControl> _pages;
-        private readonly Dictionary<string, Button> _navButtons;
+        private readonly Dictionary<string, RadioButton> _navButtons;
         private string _activePage;
+        public UserControl CurrentPage { get { return _content.Content as UserControl; } }
 
         public MainWindow()
         {
             _state = AppState.Current;
             _pages = new Dictionary<string, UserControl>();
-            _navButtons = new Dictionary<string, Button>();
+            _navButtons = new Dictionary<string, RadioButton>();
             Title = "XMG_ADB";
             Width = 1366;
             Height = 820;
@@ -37,35 +38,37 @@ namespace XMG_ADB
             UseLayoutRounding = true;
             SnapsToDevicePixels = true;
 
-            ConfigureResources();
+            Resources.MergedDictionaries.Add((ResourceDictionary)Application.LoadComponent(new Uri("/" + typeof(Ui).Assembly.GetName().Name + ";component/src/Styles/Controls.xaml", UriKind.Relative)));
+            Resources["StatusBrushConverter"] = new StatusBrushConverter();
             ApplyTheme(_state.Settings.Theme);
-
-            var root = new Grid();
-            root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(58) });
-            root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-            root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(36) });
-            root.SetResourceReference(Panel.BackgroundProperty, "BackgroundBrush");
-
-            var header = BuildHeader(out _deviceSelector, out _adbStatus, out _adbDot);
-            Grid.SetRow(header, 0);
-            root.Children.Add(header);
-
-            var body = new Grid();
-            body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(218) });
-            body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            var nav = BuildNavigation();
-            Grid.SetColumn(nav, 0);
-            body.Children.Add(nav);
-            _content = new ContentControl();
-            Grid.SetColumn(_content, 1);
-            body.Children.Add(_content);
-            Grid.SetRow(body, 1);
-            root.Children.Add(body);
-
-            var footer = BuildFooter(out _statusText, out _busyBar);
-            Grid.SetRow(footer, 2);
-            root.Children.Add(footer);
+            var root = Ui.LoadView("MainWindow");
             Content = root;
+            _content = Ui.Find<ContentControl>(root, "PageContent");
+            _deviceSelector = Ui.Find<ComboBox>(root, "DeviceSelector");
+            _deviceSelector.ItemsSource = _state.Devices;
+            _adbStatus = Ui.Find<TextBlock>(root, "AdbStatus");
+            _adbDot = Ui.Find<Ellipse>(root, "AdbDot");
+            _statusText = Ui.Find<TextBlock>(root, "StatusText");
+            _busyBar = Ui.Find<ProgressBar>(root, "BusyBar");
+            Ui.Find<Button>(root, "ThemeButton").Click += delegate { ApplyTheme(_state.Settings.Theme == "Dark" ? "Light" : "Dark"); };
+            var navigation = Ui.Find<StackPanel>(root, "Navigation");
+            string[] names = { "设备概览", "设备", "实时日志", "APK 安装", "文件传输", "应用管理", "工具与诊断", "操作记录" };
+            string[] icons = { "\uE80F", "\uE8EA", "\uE9D9", "\uE7B8", "\uE8B7", "\uE80A", "\uE90F", "\uE81C" };
+            for (int i = 0; i < names.Length; i++)
+            {
+                string target = names[i];
+                var button = new RadioButton { GroupName = "Navigation", Style = (Style)Resources["NavButton"] };
+                var label = new StackPanel { Orientation = Orientation.Horizontal };
+                label.Children.Add(new TextBlock { Text = icons[i], FontFamily = new FontFamily("Segoe MDL2 Assets"), FontSize = 18, Width = 34, Foreground = Brushes.White });
+                label.Children.Add(new TextBlock { Text = target == "设备" ? "设备连接" : target, Foreground = Brushes.White, FontSize = 14 });
+                button.Content = label;
+                button.Click += delegate { Navigate(target); };
+                navigation.Children.Add(button);
+                _navButtons[target] = button;
+            }
+            var settings = Ui.Find<RadioButton>(root, "SettingsNav");
+            settings.Click += delegate { Navigate("设置"); };
+            _navButtons["设置"] = settings;
 
             _state.SelectedDeviceChanged += OnSelectedDeviceChanged;
             _state.DevicesChanged += OnDevicesChanged;
@@ -77,7 +80,7 @@ namespace XMG_ADB
 
             Loaded += async delegate
             {
-                Navigate("设备");
+                Navigate("设备概览");
                 UpdateHeader();
                 if (_state.Adb.IsAvailable) await _state.RefreshDevicesAsync();
             };
@@ -118,16 +121,12 @@ namespace XMG_ADB
             if (!_pages.ContainsKey(name)) _pages[name] = CreatePage(name);
             _content.Content = _pages[name];
             _activePage = name;
-            foreach (var pair in _navButtons)
-            {
-                pair.Value.FontWeight = pair.Key == name ? FontWeights.SemiBold : FontWeights.Normal;
-                pair.Value.SetResourceReference(Control.BackgroundProperty, pair.Key == name ? "SurfaceAltBrush" : "SurfaceBrush");
-                pair.Value.SetResourceReference(Control.ForegroundProperty, pair.Key == name ? "AccentBrush" : "TextPrimaryBrush");
-            }
+            foreach (var pair in _navButtons) pair.Value.IsChecked = pair.Key == name;
         }
 
         private UserControl CreatePage(string name)
         {
+            if (name == "设备概览") return new OverviewPage(Navigate);
             if (name == "设备") return new DevicesPage();
             if (name == "实时日志") return new LogcatPage();
             if (name == "APK 安装") return new ApkPage();
@@ -136,151 +135,6 @@ namespace XMG_ADB
             if (name == "工具与诊断") return new ToolsPage();
             if (name == "操作记录") return new HistoryPage();
             return new SettingsPage(ApplyTheme, UpdateHeader);
-        }
-
-        private Border BuildHeader(out ComboBox selector, out TextBlock adbStatus, out Ellipse adbDot)
-        {
-            var header = new Border { BorderThickness = new Thickness(0, 0, 0, 1), Padding = new Thickness(20, 0, 18, 0) };
-            header.SetResourceReference(Border.BackgroundProperty, "SurfaceBrush");
-            header.SetResourceReference(Border.BorderBrushProperty, "BorderBrush");
-            var grid = new Grid();
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(260) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-            var brand = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-            var mark = new Border { Width = 32, Height = 32, CornerRadius = new CornerRadius(8), Margin = new Thickness(0, 0, 11, 0) };
-            mark.SetResourceReference(Border.BackgroundProperty, "AccentBrush");
-            var markText = Ui.Text("XA", 12, "OnAccentBrush", FontWeights.Bold);
-            markText.HorizontalAlignment = HorizontalAlignment.Center;
-            markText.VerticalAlignment = VerticalAlignment.Center;
-            mark.Child = markText;
-            brand.Children.Add(mark);
-            var names = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-            names.Children.Add(Ui.Text("XMG_ADB", 15, "TextPrimaryBrush", FontWeights.SemiBold));
-            names.Children.Add(Ui.Text("ADB 运维工作台", 11, "TextSecondaryBrush", FontWeights.Normal));
-            brand.Children.Add(names);
-            grid.Children.Add(brand);
-
-            var adbPanel = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 20, 0) };
-            adbDot = new Ellipse { Width = 8, Height = 8, Margin = new Thickness(0, 0, 7, 0) };
-            adbStatus = Ui.Text("ADB 检测中", 12, "TextSecondaryBrush", FontWeights.Normal);
-            adbPanel.Children.Add(adbDot);
-            adbPanel.Children.Add(adbStatus);
-            Grid.SetColumn(adbPanel, 1);
-            grid.Children.Add(adbPanel);
-
-            selector = Ui.Combo(430);
-            selector.HorizontalAlignment = HorizontalAlignment.Right;
-            selector.VerticalAlignment = VerticalAlignment.Center;
-            selector.ItemsSource = _state.Devices;
-            selector.DisplayMemberPath = "Display";
-            selector.ToolTip = "当前操作目标设备";
-            Grid.SetColumn(selector, 2);
-            grid.Children.Add(selector);
-
-            var actions = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) };
-            var theme = Ui.Button("切换主题", false);
-            theme.Click += delegate { ApplyTheme(_state.Settings.Theme == "Dark" ? "Light" : "Dark"); };
-            var settings = Ui.Button("设置", false);
-            settings.Margin = new Thickness(0);
-            settings.Click += delegate { Navigate("设置"); };
-            actions.Children.Add(theme);
-            actions.Children.Add(settings);
-            Grid.SetColumn(actions, 3);
-            grid.Children.Add(actions);
-            header.Child = grid;
-            return header;
-        }
-
-        private Border BuildNavigation()
-        {
-            var border = new Border { BorderThickness = new Thickness(0, 0, 1, 0), Padding = new Thickness(12, 16, 12, 12) };
-            border.SetResourceReference(Border.BackgroundProperty, "SurfaceBrush");
-            border.SetResourceReference(Border.BorderBrushProperty, "BorderBrush");
-            var stack = new StackPanel();
-            string[] items = { "设备", "实时日志", "APK 安装", "文件传输", "应用管理", "工具与诊断", "操作记录", "设置" };
-            foreach (string item in items)
-            {
-                var button = new Button
-                {
-                    Content = item,
-                    Height = 42,
-                    Margin = new Thickness(0, 0, 0, 4),
-                    Padding = new Thickness(14, 0, 14, 0),
-                    HorizontalContentAlignment = HorizontalAlignment.Left,
-                    BorderThickness = new Thickness(0),
-                    Cursor = System.Windows.Input.Cursors.Hand,
-                    FontSize = 13
-                };
-                button.SetResourceReference(Control.BackgroundProperty, "SurfaceBrush");
-                button.SetResourceReference(Control.ForegroundProperty, "TextPrimaryBrush");
-                string target = item;
-                button.Click += delegate { Navigate(target); };
-                _navButtons[item] = button;
-                stack.Children.Add(button);
-            }
-            border.Child = stack;
-            return border;
-        }
-
-        private Border BuildFooter(out TextBlock statusText, out ProgressBar busyBar)
-        {
-            var footer = new Border { BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(18, 0, 18, 0) };
-            footer.SetResourceReference(Border.BackgroundProperty, "SurfaceBrush");
-            footer.SetResourceReference(Border.BorderBrushProperty, "BorderBrush");
-            var grid = new Grid();
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(180) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            statusText = Ui.Text("就绪", 12, "TextSecondaryBrush", FontWeights.Normal);
-            grid.Children.Add(statusText);
-            busyBar = new ProgressBar { Height = 3, IsIndeterminate = true, Visibility = Visibility.Collapsed, Margin = new Thickness(12, 0, 12, 0) };
-            busyBar.SetResourceReference(ProgressBar.ForegroundProperty, "AccentBrush");
-            Grid.SetColumn(busyBar, 1);
-            grid.Children.Add(busyBar);
-            var hint = Ui.Text("所有操作均在后台执行", 11, "TextSecondaryBrush", FontWeights.Normal);
-            Grid.SetColumn(hint, 2);
-            grid.Children.Add(hint);
-            footer.Child = grid;
-            return footer;
-        }
-
-        private void ConfigureResources()
-        {
-            Resources["StatusBrushConverter"] = new StatusBrushConverter();
-
-            var primary = new Style(typeof(Button));
-            primary.Setters.Add(new Setter(Control.BackgroundProperty, new DynamicResourceExtension("AccentBrush")));
-            primary.Setters.Add(new Setter(Control.ForegroundProperty, new DynamicResourceExtension("OnAccentBrush")));
-            primary.Setters.Add(new Setter(Control.BorderBrushProperty, new DynamicResourceExtension("AccentBrush")));
-            primary.Setters.Add(new Setter(Control.BorderThicknessProperty, new Thickness(1)));
-            primary.Setters.Add(new Setter(Control.FocusVisualStyleProperty, null));
-            Resources["PrimaryButtonStyle"] = primary;
-
-            var secondary = new Style(typeof(Button));
-            secondary.Setters.Add(new Setter(Control.BackgroundProperty, new DynamicResourceExtension("SurfaceBrush")));
-            secondary.Setters.Add(new Setter(Control.ForegroundProperty, new DynamicResourceExtension("TextPrimaryBrush")));
-            secondary.Setters.Add(new Setter(Control.BorderBrushProperty, new DynamicResourceExtension("BorderBrush")));
-            secondary.Setters.Add(new Setter(Control.BorderThicknessProperty, new Thickness(1)));
-            secondary.Setters.Add(new Setter(Control.FocusVisualStyleProperty, null));
-            Resources["SecondaryButtonStyle"] = secondary;
-
-            var input = new Style(typeof(TextBox));
-            input.Setters.Add(new Setter(Control.BackgroundProperty, new DynamicResourceExtension("SurfaceBrush")));
-            input.Setters.Add(new Setter(Control.ForegroundProperty, new DynamicResourceExtension("TextPrimaryBrush")));
-            input.Setters.Add(new Setter(Control.BorderBrushProperty, new DynamicResourceExtension("BorderBrush")));
-            input.Setters.Add(new Setter(Control.BorderThicknessProperty, new Thickness(1)));
-            input.Setters.Add(new Setter(TextBoxBase.CaretBrushProperty, new DynamicResourceExtension("AccentBrush")));
-            Resources["InputStyle"] = input;
-
-            var combo = new Style(typeof(ComboBox));
-            combo.Setters.Add(new Setter(Control.BackgroundProperty, new DynamicResourceExtension("SurfaceBrush")));
-            combo.Setters.Add(new Setter(Control.ForegroundProperty, new DynamicResourceExtension("ComboForegroundBrush")));
-            combo.Setters.Add(new Setter(Control.BorderBrushProperty, new DynamicResourceExtension("BorderBrush")));
-            combo.Setters.Add(new Setter(Control.BorderThicknessProperty, new Thickness(1)));
-            Resources["ComboStyle"] = combo;
         }
 
         private void UpdateHeader()

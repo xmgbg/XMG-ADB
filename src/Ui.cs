@@ -9,6 +9,15 @@ namespace XMG_ADB
 {
     public static class Ui
     {
+        public static FrameworkElement LoadView(string name)
+        {
+            return (FrameworkElement)Application.LoadComponent(new Uri("/" + typeof(Ui).Assembly.GetName().Name + ";component/src/Views/" + name + ".xaml", UriKind.Relative));
+        }
+
+        public static T Find<T>(FrameworkElement view, string name) where T : FrameworkElement
+        {
+            return (T)view.FindName(name);
+        }
         public static readonly Thickness PagePadding = new Thickness(28, 24, 28, 24);
 
         public static TextBlock Text(string value, double size, string brushKey, FontWeight weight)

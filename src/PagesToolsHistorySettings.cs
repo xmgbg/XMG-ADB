@@ -17,6 +17,8 @@ namespace XMG_ADB
 {
     public sealed class ToolsPage : UserControl, IDisposable
     {
+        private TabControl _tabs;
+        public void SelectTab(int index) { _tabs.SelectedIndex = index; }
         private readonly AppState _state = AppState.Current;
         private TextBox _captureFolder;
         private TextBox _recordRemote;
@@ -42,6 +44,7 @@ namespace XMG_ADB
             Ui.Heading("工具与诊断", "截图录屏、性能监控、诊断导出、脚本预设和 scrcpy 集成。", heading);
             root.Children.Add(heading);
             var tabs = new TabControl();
+            _tabs = tabs;
             tabs.SetResourceReference(Control.BackgroundProperty, "SurfaceBrush");
             tabs.SetResourceReference(Control.ForegroundProperty, "TextPrimaryBrush");
             tabs.Items.Add(new TabItem { Header = "截图与录屏", Content = BuildCaptureTab() });

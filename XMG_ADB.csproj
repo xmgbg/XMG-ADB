@@ -22,6 +22,11 @@
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <ItemGroup>
+    <Page Include="src\Views\*.xaml" />
+    <Page Include="src\Styles\*.xaml" />
+    <Resource Include="assets\xmg-adb-logo-v2.png" />
+  </ItemGroup>
+  <ItemGroup>
     <Reference Include="System"><Private>False</Private></Reference>
     <Reference Include="System.Core"><Private>False</Private></Reference>
     <Reference Include="System.Drawing"><Private>False</Private></Reference>
@@ -41,6 +46,7 @@
     <Compile Include="src\PagesToolsHistorySettings.cs" />
     <Compile Include="src\Program.cs" />
     <Compile Include="src\Ui.cs" />
+    <Compile Include="src\OverviewPage.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
