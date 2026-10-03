@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -16,7 +17,8 @@ namespace XMG_ADB
         public string Output { get; set; }
         public string Error { get; set; }
         public bool TimedOut { get; set; }
-        public bool Success { get { return !TimedOut && ExitCode == 0; } }
+        public bool Cancelled { get; set; }
+        public bool Success { get { return !TimedOut && !Cancelled && ExitCode == 0; } }
         public string Combined
         {
             get
@@ -234,6 +236,11 @@ namespace XMG_ADB
 
         public Task<CommandResult> RunAsync(string arguments, string serial, int timeoutMs)
         {
+            return RunAsync(arguments, serial, timeoutMs, CancellationToken.None);
+        }
+
+        public Task<CommandResult> RunAsync(string arguments, string serial, int timeoutMs, CancellationToken cancellationToken)
+        {
             if (!IsAvailable)
             {
                 return Task.FromResult(new CommandResult { ExitCode = -1, Error = "未找到 adb.exe，请在设置中指定路径。" });
@@ -241,7 +248,7 @@ namespace XMG_ADB
             string all = string.IsNullOrWhiteSpace(serial)
                 ? arguments
                 : "-s " + Quote(serial) + " " + arguments;
-            return RunProcessAsync(ExecutablePath, all, timeoutMs);
+            return RunProcessAsync(ExecutablePath, all, timeoutMs, cancellationToken);
         }
 
         public Process StartStreaming(string arguments, string serial, Action<string, bool> onLine)
@@ -270,10 +277,16 @@ namespace XMG_ADB
 
         public async Task<CommandResult> RunToFileAsync(string arguments, string serial, string outputPath, int timeoutMs)
         {
+            return await RunToFileAsync(arguments, serial, outputPath, timeoutMs, CancellationToken.None);
+        }
+
+        public async Task<CommandResult> RunToFileAsync(string arguments, string serial, string outputPath, int timeoutMs, CancellationToken cancellationToken)
+        {
             if (!IsAvailable) return new CommandResult { ExitCode = -1, Error = "未找到 adb.exe" };
             string all = string.IsNullOrWhiteSpace(serial) ? arguments : "-s " + Quote(serial) + " " + arguments;
             var process = new Process();
             process.StartInfo = CreateStartInfo(ExecutablePath, all);
+            bool keepOutput = false;
             try
             {
                 process.Start();
@@ -281,23 +294,26 @@ namespace XMG_ADB
                 using (var file = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.Read))
                 {
                     Task copy = process.StandardOutput.BaseStream.CopyToAsync(file);
-                    Task wait = Task.Run(delegate { process.WaitForExit(); });
-                    Task combined = Task.WhenAll(copy, wait, errorTask);
-                    Task completed = await Task.WhenAny(combined, Task.Delay(timeoutMs));
-                    if (completed != combined && !process.HasExited)
+                    ProcessCompletion completion = await WaitForProcessAsync(process, timeoutMs, cancellationToken);
+                    if (completion != ProcessCompletion.Completed)
                     {
-                        try { process.Kill(); } catch { }
-                        return new CommandResult { ExitCode = -1, Error = "操作超时", TimedOut = true };
+                        await SettleAsync(Task.WhenAll(copy, errorTask), 2000);
+                        return CreateInterruptedResult(completion);
                     }
-                    await combined;
+                    await Task.WhenAll(copy, errorTask);
                 }
-                return new CommandResult { ExitCode = process.ExitCode, Error = await errorTask, Output = outputPath };
+                keepOutput = process.ExitCode == 0;
+                return new CommandResult { ExitCode = process.ExitCode, Error = await errorTask, Output = keepOutput ? outputPath : "" };
             }
             catch (Exception ex)
             {
                 return new CommandResult { ExitCode = -1, Error = ex.Message };
             }
-            finally { process.Dispose(); }
+            finally
+            {
+                process.Dispose();
+                if (!keepOutput) TryDelete(outputPath);
+            }
         }
 
         public static string Quote(string value)
@@ -323,7 +339,14 @@ namespace XMG_ADB
             return info;
         }
 
-        private static async Task<CommandResult> RunProcessAsync(string fileName, string arguments, int timeoutMs)
+        private enum ProcessCompletion
+        {
+            Completed,
+            TimedOut,
+            Cancelled
+        }
+
+        private static async Task<CommandResult> RunProcessAsync(string fileName, string arguments, int timeoutMs, CancellationToken cancellationToken)
         {
             var process = new Process();
             process.StartInfo = CreateStartInfo(fileName, arguments);
@@ -332,21 +355,84 @@ namespace XMG_ADB
                 process.Start();
                 Task<string> output = process.StandardOutput.ReadToEndAsync();
                 Task<string> error = process.StandardError.ReadToEndAsync();
-                Task wait = Task.Run(delegate { process.WaitForExit(); });
-                Task all = Task.WhenAll(output, error, wait);
-                Task completed = await Task.WhenAny(all, Task.Delay(timeoutMs));
-                if (completed != all)
+                ProcessCompletion completion = await WaitForProcessAsync(process, timeoutMs, cancellationToken);
+                if (completion != ProcessCompletion.Completed)
                 {
-                    try { process.Kill(); } catch { }
-                    return new CommandResult { ExitCode = -1, Output = await output, Error = "操作超时", TimedOut = true };
+                    await SettleAsync(Task.WhenAll(output, error), 2000);
+                    return CreateInterruptedResult(completion, output.IsCompleted && !output.IsFaulted ? output.Result : "");
                 }
-                return new CommandResult { ExitCode = process.ExitCode, Output = await output, Error = await error };
+                await Task.WhenAll(output, error);
+                return new CommandResult { ExitCode = process.ExitCode, Output = output.Result, Error = error.Result };
             }
             catch (Exception ex)
             {
                 return new CommandResult { ExitCode = -1, Error = ex.Message };
             }
             finally { process.Dispose(); }
+        }
+
+        private static async Task<ProcessCompletion> WaitForProcessAsync(Process process, int timeoutMs, CancellationToken cancellationToken)
+        {
+            Task wait = Task.Run(delegate { process.WaitForExit(); });
+            Task timeout = Task.Delay(Math.Max(1, timeoutMs));
+            var cancelled = new TaskCompletionSource<bool>();
+            using (cancellationToken.Register(delegate { cancelled.TrySetResult(true); }))
+            {
+                Task completed = await Task.WhenAny(wait, timeout, cancelled.Task);
+                if (completed == wait)
+                {
+                    await wait;
+                    return ProcessCompletion.Completed;
+                }
+
+                KillAndWait(process);
+                return completed == cancelled.Task ? ProcessCompletion.Cancelled : ProcessCompletion.TimedOut;
+            }
+        }
+
+        private static void KillAndWait(Process process)
+        {
+            try
+            {
+                if (!process.HasExited) process.Kill();
+            }
+            catch { }
+            try
+            {
+                if (!process.HasExited) process.WaitForExit(5000);
+            }
+            catch { }
+        }
+
+        private static async Task SettleAsync(Task task, int timeoutMs)
+        {
+            Task completed = await Task.WhenAny(task, Task.Delay(timeoutMs));
+            if (completed == task)
+            {
+                try { await task; } catch { }
+            }
+        }
+
+        private static CommandResult CreateInterruptedResult(ProcessCompletion completion, string output = "")
+        {
+            bool cancelled = completion == ProcessCompletion.Cancelled;
+            return new CommandResult
+            {
+                ExitCode = -1,
+                Output = output,
+                Error = cancelled ? "操作已取消" : "操作超时",
+                Cancelled = cancelled,
+                TimedOut = !cancelled
+            };
+        }
+
+        private static void TryDelete(string path)
+        {
+            try
+            {
+                if (File.Exists(path)) File.Delete(path);
+            }
+            catch { }
         }
     }
 
@@ -456,6 +542,7 @@ namespace XMG_ADB
         public static string Explain(CommandResult result)
         {
             string text = result.Combined;
+            if (result.Cancelled) return "操作已取消。\n\n" + text;
             if (result.TimedOut) return "操作超时。请检查设备连接和网络。\n\n" + text;
             if (text.IndexOf("unauthorized", StringComparison.OrdinalIgnoreCase) >= 0)
                 return "设备未授权。请在设备上确认 USB 或无线调试授权。\n\n" + text;
