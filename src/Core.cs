@@ -98,10 +98,15 @@ namespace XMG_ADB
         public string SettingsPath { get { return Path.Combine(DataDirectory, "settings.ini"); } }
         public string HistoryPath { get { return Path.Combine(DataDirectory, "operations.log"); } }
 
-        public SettingsStore()
+        public SettingsStore() : this(null)
+        {
+        }
+
+        internal SettingsStore(string dataDirectory)
         {
             string local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            DataDirectory = EnsureWritableDirectory(Path.Combine(local, "XMG_ADB"));
+            string preferred = string.IsNullOrWhiteSpace(dataDirectory) ? Path.Combine(local, "XMG_ADB") : dataDirectory;
+            DataDirectory = EnsureWritableDirectory(preferred);
             Directory.CreateDirectory(Path.Combine(DataDirectory, "android"));
             Environment.SetEnvironmentVariable("ANDROID_USER_HOME", Path.Combine(DataDirectory, "android"));
 
@@ -319,7 +324,29 @@ namespace XMG_ADB
         public static string Quote(string value)
         {
             if (value == null) return "\"\"";
-            return "\"" + value.Replace("\"", "\\\"") + "\"";
+            var result = new StringBuilder("\"");
+            int backslashes = 0;
+            foreach (char character in value)
+            {
+                if (character == '\\')
+                {
+                    backslashes++;
+                    continue;
+                }
+                if (character == '"')
+                {
+                    result.Append('\\', backslashes * 2 + 1);
+                    result.Append('"');
+                    backslashes = 0;
+                    continue;
+                }
+                result.Append('\\', backslashes);
+                backslashes = 0;
+                result.Append(character);
+            }
+            result.Append('\\', backslashes * 2);
+            result.Append('"');
+            return result.ToString();
         }
 
         public static string ShellQuote(string value)
@@ -482,8 +509,7 @@ namespace XMG_ADB
                 string selectedSerial = SelectedDevice == null ? null : SelectedDevice.Serial;
                 Devices.Clear();
                 foreach (DeviceInfo device in parsed) Devices.Add(device);
-                SelectedDevice = Devices.FirstOrDefault(delegate(DeviceInfo d) { return d.Serial == selectedSerial; })
-                    ?? Devices.FirstOrDefault(delegate(DeviceInfo d) { return d.State == "device"; });
+                SelectedDevice = SelectDevice(Devices, selectedSerial);
                 if (DevicesChanged != null) DevicesChanged(this, EventArgs.Empty);
             });
         }
@@ -517,11 +543,7 @@ namespace XMG_ADB
             });
             lock (_historyLock)
             {
-                string line = string.Join("\t", new[]
-                {
-                    item.Time.ToString("o"), Clean(item.Action), Clean(item.Device), Clean(item.Status),
-                    duration.ToString(), Convert.ToBase64String(Encoding.UTF8.GetBytes(item.Detail ?? ""))
-                });
+                string line = SerializeHistory(item);
                 File.AppendAllText(Settings.HistoryPath, line + Environment.NewLine, new UTF8Encoding(false));
             }
         }
@@ -585,6 +607,44 @@ namespace XMG_ADB
             return result;
         }
 
+        internal static DeviceInfo SelectDevice(IEnumerable<DeviceInfo> devices, string selectedSerial)
+        {
+            List<DeviceInfo> available = (devices ?? Enumerable.Empty<DeviceInfo>()).ToList();
+            return available.FirstOrDefault(delegate(DeviceInfo device) { return device.Serial == selectedSerial; })
+                ?? available.FirstOrDefault(delegate(DeviceInfo device) { return device.State == "device"; });
+        }
+
+        internal static string SerializeHistory(OperationItem item)
+        {
+            return string.Join("\t", new[]
+            {
+                item.Time.ToString("o"), Clean(item.Action), Clean(item.Device), Clean(item.Status),
+                item.DurationMs.ToString(), Convert.ToBase64String(Encoding.UTF8.GetBytes(item.Detail ?? ""))
+            });
+        }
+
+        internal static OperationItem ParseHistory(string line)
+        {
+            string[] parts = (line ?? "").Split('\t');
+            if (parts.Length < 6) return null;
+            DateTime time;
+            long duration;
+            if (!DateTime.TryParse(parts[0], out time)) return null;
+            if (!long.TryParse(parts[4], out duration)) return null;
+            string detail;
+            try { detail = Encoding.UTF8.GetString(Convert.FromBase64String(parts[5])); }
+            catch { return null; }
+            return new OperationItem
+            {
+                Time = time,
+                Action = parts[1],
+                Device = parts[2],
+                Status = parts[3],
+                DurationMs = duration,
+                Detail = detail
+            };
+        }
+
         private void LoadHistory()
         {
             if (!File.Exists(Settings.HistoryPath)) return;
@@ -593,19 +653,8 @@ namespace XMG_ADB
                 string[] lines = File.ReadAllLines(Settings.HistoryPath, Encoding.UTF8);
                 foreach (string line in lines.Reverse().Take(500))
                 {
-                    string[] parts = line.Split('\t');
-                    if (parts.Length < 6) continue;
-                    DateTime time;
-                    long duration;
-                    if (!DateTime.TryParse(parts[0], out time)) time = DateTime.Now;
-                    long.TryParse(parts[4], out duration);
-                    string detail = "";
-                    try { detail = Encoding.UTF8.GetString(Convert.FromBase64String(parts[5])); } catch { }
-                    Operations.Add(new OperationItem
-                    {
-                        Time = time, Action = parts[1], Device = parts[2], Status = parts[3],
-                        DurationMs = duration, Detail = detail
-                    });
+                    OperationItem item = ParseHistory(line);
+                    if (item != null) Operations.Add(item);
                 }
             }
             catch { }
