@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="./assets/xmg-adb-logo-v2.png" width="180" alt="XMG_ADB Logo" />
+
 # XMG_ADB
 
 ### 面向 Windows 的原生 ADB 图形化运维工作台
