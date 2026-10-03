@@ -1,6 +1,6 @@
 <div align="center">
 
-# XMG ADB
+# XMG_ADB
 
 ### 面向 Windows 的原生 ADB 图形化运维工作台
 
@@ -22,7 +22,7 @@
 
 ## 项目简介
 
-XMG ADB 是一款面向 Android 开发、测试和设备运维场景的 Windows 桌面工具。它将常用 ADB 命令整合进统一的图形界面，减少重复输入命令、切换终端和手工整理日志的成本。
+XMG_ADB 是一款面向 Android 开发、测试和设备运维场景的 Windows 桌面工具。它将常用 ADB 命令整合进统一的图形界面，减少重复输入命令、切换终端和手工整理日志的成本。
 
 项目使用 **C# + WPF + .NET Framework 4.8** 构建，界面与业务逻辑均由原生代码实现。应用可在未检测到 ADB 时正常启动，并允许用户随后在设置页指定 `adb.exe` 与可选的 `scrcpy.exe`。
 
@@ -81,14 +81,14 @@ cd XMG-ADB
 GUI 构建产物：
 
 ```text
-dist/E300DeviceConsole.exe
+dist/XMG_ADB.exe
 ```
 
 构建控制台自检版本并运行测试：
 
 ```powershell
 .\build.ps1 -Console
-.\dist\E300DeviceConsole.Tests.exe /selftest
+.\dist\XMG_ADB.Tests.exe /selftest
 ```
 
 预期结果：
@@ -100,8 +100,6 @@ PASS 命令参数引用
 PASS 设置目录可写
 SELFTEST PASS
 ```
-
-> 当前发布文件名使用 `XMG_ADB`，源码内部程序集和构建产物仍沿用 `E300DeviceConsole`。二者功能一致，后续版本将统一品牌命名。
 
 ## 🧩 项目架构
 
@@ -144,7 +142,7 @@ XMG-ADB/
 默认情况下，配置、操作记录和 Android 用户目录保存在：
 
 ```text
-%LOCALAPPDATA%\E300DeviceConsole\
+%LOCALAPPDATA%\XMG_ADB\
 ```
 
 当该目录不可写时，程序会依次尝试程序目录下的 `data/` 和系统临时目录。应用不会将设备日志或用户配置上传到网络。
@@ -164,7 +162,7 @@ XMG-ADB/
 
 ## 🗺️ 优化路线
 
-- [ ] 统一 `XMG ADB`、`E300 Device Console`、命名空间及构建产物名称
+- [x] 统一窗口、命名空间、程序集、配置目录及构建产物名称
 - [ ] 增加 `.gitignore`，停止跟踪本地构建产物，并通过 Release 发布 EXE
 - [ ] 引入 `.csproj` 与可重复的 CI 构建流程
 - [ ] 扩充命令超时、异常退出、设备切换和解析边界测试
@@ -178,7 +176,7 @@ XMG-ADB/
 
 ```powershell
 .\build.ps1 -Console
-.\dist\E300DeviceConsole.Tests.exe /selftest
+.\dist\XMG_ADB.Tests.exe /selftest
 ```
 
 提交信息请保持简洁，例如：
@@ -197,6 +195,6 @@ docs: update build guide
 
 <div align="center">
 
-**XMG ADB — 让 Android 设备运维更直观。**
+**XMG_ADB — 让 Android 设备运维更直观。**
 
 </div>

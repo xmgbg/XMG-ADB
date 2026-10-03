@@ -4,7 +4,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Threading;
 
-namespace E300DeviceConsole
+namespace XMG_ADB
 {
     public static class Program
     {
@@ -31,7 +31,7 @@ namespace E300DeviceConsole
                 File.AppendAllText(path, DateTime.Now.ToString("o") + Environment.NewLine + args.Exception + Environment.NewLine);
             }
             catch { }
-            MessageBox.Show("程序遇到未处理错误：\n\n" + args.Exception.Message, "E300 Device Console", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show("程序遇到未处理错误：\n\n" + args.Exception.Message, "XMG_ADB", MessageBoxButton.OK, MessageBoxImage.Error);
             args.Handled = true;
         }
     }
@@ -43,8 +43,8 @@ namespace E300DeviceConsole
             int failed = 0;
             failed += Check("解析网络设备", delegate
             {
-                var devices = AppState.ParseDevices("List of devices attached\n192.168.1.8:5555 device product:e300 model:E300_Medical transport_id:2\n");
-                return devices.Count == 1 && devices[0].Serial == "192.168.1.8:5555" && devices[0].Model == "E300_Medical";
+                var devices = AppState.ParseDevices("List of devices attached\n192.168.1.8:5555 device product:xmg model:XMG_Device transport_id:2\n");
+                return devices.Count == 1 && devices[0].Serial == "192.168.1.8:5555" && devices[0].Model == "XMG_Device";
             });
             failed += Check("解析未授权状态", delegate
             {

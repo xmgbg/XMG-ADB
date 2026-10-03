@@ -16,7 +16,7 @@ if (-not (Test-Path $compiler)) {
 }
 
 New-Item -ItemType Directory -Force -Path $distRoot | Out-Null
-$outputName = if ($Console) { 'E300DeviceConsole.Tests.exe' } else { 'E300DeviceConsole.exe' }
+$outputName = if ($Console) { 'XMG_ADB.Tests.exe' } else { 'XMG_ADB.exe' }
 $target = if ($Console) { 'exe' } else { 'winexe' }
 $outputPath = Join-Path $distRoot $outputName
 $sources = Get-ChildItem -LiteralPath $sourceRoot -Filter '*.cs' | ForEach-Object { $_.FullName }

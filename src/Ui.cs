@@ -5,7 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
 
-namespace E300DeviceConsole
+namespace XMG_ADB
 {
     public static class Ui
     {

@@ -12,7 +12,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using Forms = System.Windows.Forms;
 
-namespace E300DeviceConsole
+namespace XMG_ADB
 {
     public sealed class ApkPage : UserControl
     {

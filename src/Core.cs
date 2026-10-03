@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace E300DeviceConsole
+namespace XMG_ADB
 {
     public sealed class CommandResult
     {
@@ -99,7 +99,7 @@ namespace E300DeviceConsole
         public SettingsStore()
         {
             string local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            DataDirectory = EnsureWritableDirectory(Path.Combine(local, "E300DeviceConsole"));
+            DataDirectory = EnsureWritableDirectory(Path.Combine(local, "XMG_ADB"));
             Directory.CreateDirectory(Path.Combine(DataDirectory, "android"));
             Environment.SetEnvironmentVariable("ANDROID_USER_HOME", Path.Combine(DataDirectory, "android"));
 
@@ -118,7 +118,7 @@ namespace E300DeviceConsole
             {
                 preferred,
                 Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data"),
-                Path.Combine(Path.GetTempPath(), "E300DeviceConsole")
+                Path.Combine(Path.GetTempPath(), "XMG_ADB")
             };
             foreach (string candidate in candidates)
             {

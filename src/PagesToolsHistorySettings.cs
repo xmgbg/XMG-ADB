@@ -12,7 +12,7 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using Forms = System.Windows.Forms;
 
-namespace E300DeviceConsole
+namespace XMG_ADB
 {
     public sealed class ToolsPage : UserControl, IDisposable
     {

@@ -7,7 +7,7 @@ using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Shapes;
 
-namespace E300DeviceConsole
+namespace XMG_ADB
 {
     public sealed class MainWindow : Window
     {
@@ -27,7 +27,7 @@ namespace E300DeviceConsole
             _state = AppState.Current;
             _pages = new Dictionary<string, UserControl>();
             _navButtons = new Dictionary<string, Button>();
-            Title = "E300 Device Console";
+            Title = "XMG_ADB";
             Width = 1366;
             Height = 820;
             MinWidth = 1100;
@@ -152,13 +152,13 @@ namespace E300DeviceConsole
             var brand = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
             var mark = new Border { Width = 32, Height = 32, CornerRadius = new CornerRadius(8), Margin = new Thickness(0, 0, 11, 0) };
             mark.SetResourceReference(Border.BackgroundProperty, "AccentBrush");
-            var markText = Ui.Text("E3", 12, "OnAccentBrush", FontWeights.Bold);
+            var markText = Ui.Text("XA", 12, "OnAccentBrush", FontWeights.Bold);
             markText.HorizontalAlignment = HorizontalAlignment.Center;
             markText.VerticalAlignment = VerticalAlignment.Center;
             mark.Child = markText;
             brand.Children.Add(mark);
             var names = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-            names.Children.Add(Ui.Text("E300 Device Console", 15, "TextPrimaryBrush", FontWeights.SemiBold));
+            names.Children.Add(Ui.Text("XMG_ADB", 15, "TextPrimaryBrush", FontWeights.SemiBold));
             names.Children.Add(Ui.Text("ADB 运维工作台", 11, "TextSecondaryBrush", FontWeights.Normal));
             brand.Children.Add(names);
             grid.Children.Add(brand);
