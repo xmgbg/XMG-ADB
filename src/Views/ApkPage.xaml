@@ -1,0 +1,17 @@
+<Grid xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Margin="28,24" AllowDrop="True">
+ <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+ <StackPanel><TextBlock Text="APK 安装" Style="{DynamicResource PageTitle}"/><TextBlock Text="选择或拖入安装包，支持 split APK 和多设备安装。" Style="{DynamicResource Subtitle}"/></StackPanel>
+ <Grid Grid.Row="1"><Grid.ColumnDefinitions><ColumnDefinition Width="3*"/><ColumnDefinition Width="2*"/></Grid.ColumnDefinitions>
+  <Border Style="{DynamicResource Card}" Margin="0,0,16,0"><DockPanel>
+   <StackPanel DockPanel.Dock="Top"><WrapPanel><Button x:Name="Select" Content="选择 APK"/><Button x:Name="Clear" Content="清空列表"/></WrapPanel><TextBlock Text="将 .apk 文件拖入列表，多选文件将按分包安装。" Style="{DynamicResource Subtitle}"/></StackPanel>
+   <ListBox x:Name="Files" FontFamily="Consolas" MinHeight="140" AutomationProperties.Name="待安装 APK"/>
+  </DockPanel></Border>
+  <Border Grid.Column="1" Style="{DynamicResource Card}"><ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel>
+   <TextBlock Text="安装选项" Style="{DynamicResource SectionTitle}"/>
+   <CheckBox x:Name="Replace" Content="覆盖安装 (-r)" IsChecked="True"/><CheckBox x:Name="Test" Content="允许测试包 (-t)"/><CheckBox x:Name="Downgrade" Content="允许降级 (-d)"/><CheckBox x:Name="Grant" Content="授予运行时权限 (-g)"/><CheckBox x:Name="AllDevices" Content="安装到全部已连接设备"/>
+   <Button x:Name="Install" Content="开始安装" Style="{DynamicResource PrimaryButtonStyle}" HorizontalAlignment="Left"/>
+   <ProgressBar x:Name="Progress" Height="4" IsIndeterminate="True" Visibility="Collapsed" Margin="0,12"/>
+   <TextBlock x:Name="Result" Text="等待选择安装包。" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,12,0,0"/>
+  </StackPanel></ScrollViewer></Border>
+ </Grid><TextBlock Grid.Row="2" Text="多设备安装按设备顺序执行；安装前请确认目标设备。" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,14,0,0"/>
+</Grid>

@@ -28,72 +28,21 @@ namespace XMG_ADB
 
         public ApkPage()
         {
-            var root = new Grid { Margin = Ui.PagePadding, AllowDrop = true };
-            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            var heading = new StackPanel();
-            Ui.Heading("APK 安装", "支持拖放、覆盖安装、测试包、降级、权限授予、分包和多设备安装。", heading);
-            root.Children.Add(heading);
-
-            var body = new Grid();
-            body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(3, GridUnitType.Star) });
-            body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(2, GridUnitType.Star) });
-            var left = new StackPanel();
-            var selectRow = new StackPanel { Orientation = Orientation.Horizontal };
-            var select = Ui.Button("选择 APK", true);
-            select.Click += delegate { SelectApks(); };
-            var clear = Ui.Button("清空列表", false);
-            clear.Click += delegate { _files.Items.Clear(); };
-            selectRow.Children.Add(select);
-            selectRow.Children.Add(clear);
-            left.Children.Add(selectRow);
-            var dropHint = Ui.Text("可将一个或多个 .apk 文件拖入下方列表", 12, "TextSecondaryBrush", FontWeights.Normal);
-            dropHint.Margin = new Thickness(0, 12, 0, 8);
-            left.Children.Add(dropHint);
-            _files = new ListBox { MinHeight = 280, FontFamily = new FontFamily("Consolas"), FontSize = 12 };
-            _files.SetResourceReference(Control.BackgroundProperty, "SurfaceAltBrush");
-            _files.SetResourceReference(Control.ForegroundProperty, "TextPrimaryBrush");
-            _files.SetResourceReference(Control.BorderBrushProperty, "BorderBrush");
-            left.Children.Add(_files);
-            var leftPanel = Ui.Panel(left, new Thickness(0, 0, 12, 0));
-            body.Children.Add(leftPanel);
-
-            var right = new StackPanel();
-            right.Children.Add(Ui.Text("安装选项", 16, "TextPrimaryBrush", FontWeights.SemiBold));
-            _replace = Ui.Check("覆盖安装 (-r)"); _replace.IsChecked = true; _replace.Margin = new Thickness(0, 18, 0, 12);
-            _test = Ui.Check("允许测试包 (-t)"); _test.Margin = new Thickness(0, 0, 0, 12);
-            _downgrade = Ui.Check("允许降级 (-d)"); _downgrade.Margin = new Thickness(0, 0, 0, 12);
-            _grant = Ui.Check("授予运行时权限 (-g)"); _grant.Margin = new Thickness(0, 0, 0, 12);
-            _allDevices = Ui.Check("安装到全部已连接设备"); _allDevices.Margin = new Thickness(0, 6, 0, 18);
-            right.Children.Add(_replace);
-            right.Children.Add(_test);
-            right.Children.Add(_downgrade);
-            right.Children.Add(_grant);
-            right.Children.Add(_allDevices);
-            var install = Ui.Button("开始安装", true);
-            install.Width = 150;
-            install.Click += async delegate { await InstallAsync(); };
-            right.Children.Add(install);
-            _progress = new ProgressBar { Height = 4, IsIndeterminate = true, Visibility = Visibility.Collapsed, Margin = new Thickness(0, 18, 0, 12) };
-            _progress.SetResourceReference(ProgressBar.ForegroundProperty, "AccentBrush");
-            right.Children.Add(_progress);
-            _result = Ui.Text("等待选择安装包。", 12, "TextSecondaryBrush", FontWeights.Normal);
-            _result.FontFamily = new FontFamily("Consolas");
-            right.Children.Add(_result);
-            var rightPanel = Ui.Panel(right, new Thickness(0));
-            Grid.SetColumn(rightPanel, 1);
-            body.Children.Add(rightPanel);
-            Grid.SetRow(body, 1);
-            root.Children.Add(body);
-
-            var note = Ui.Text("提示：多选 APK 时使用 install-multiple，适用于 split APK；批量设备安装将按设备顺序执行。", 11, "TextSecondaryBrush", FontWeights.Normal);
-            note.Margin = new Thickness(0, 12, 0, 0);
-            Grid.SetRow(note, 2);
-            root.Children.Add(note);
-            root.Drop += OnDrop;
-            root.DragOver += delegate(object sender, DragEventArgs args) { args.Effects = DragDropEffects.Copy; args.Handled = true; };
+            var root = Ui.LoadView("ApkPage");
             Content = root;
+            _files = Ui.Find<ListBox>(root, "Files");
+            _replace = Ui.Find<CheckBox>(root, "Replace");
+            _test = Ui.Find<CheckBox>(root, "Test");
+            _downgrade = Ui.Find<CheckBox>(root, "Downgrade");
+            _grant = Ui.Find<CheckBox>(root, "Grant");
+            _allDevices = Ui.Find<CheckBox>(root, "AllDevices");
+            _result = Ui.Find<TextBlock>(root, "Result");
+            _progress = Ui.Find<ProgressBar>(root, "Progress");
+            Ui.Find<Button>(root, "Select").Click += delegate { SelectApks(); };
+            Ui.Find<Button>(root, "Clear").Click += delegate { _files.Items.Clear(); };
+            Ui.Find<Button>(root, "Install").Click += async delegate { await InstallAsync(); };
+            root.Drop += OnDrop;
+            root.DragOver += delegate(object sender, DragEventArgs args) { args.Effects = args.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None; args.Handled = true; };
         }
 
         private void SelectApks()
@@ -162,90 +111,21 @@ namespace XMG_ADB
 
         public FilesPage()
         {
-            var root = new Grid { Margin = Ui.PagePadding };
-            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-            var heading = new StackPanel();
-            Ui.Heading("文件传输", "在本地与设备之间推送或拉取文件，并支持设备目录浏览和校验。", heading);
-            root.Children.Add(heading);
-
-            var body = new Grid();
-            body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            var local = new StackPanel();
-            local.Children.Add(Ui.Text("本地", 16, "TextPrimaryBrush", FontWeights.SemiBold));
-            var localRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 14, 0, 10) };
-            _localPath = Ui.Input(_state.Settings.DefaultFolder, 360);
-            var chooseFile = Ui.Button("选择文件", false);
-            chooseFile.Click += delegate { ChooseLocalFile(); };
-            var chooseFolder = Ui.Button("选择目录", false);
-            chooseFolder.Click += delegate { ChooseLocalFolder(); };
-            localRow.Children.Add(_localPath);
-            localRow.Children.Add(chooseFile);
-            localRow.Children.Add(chooseFolder);
-            local.Children.Add(localRow);
-            var localHint = Ui.Text("推送时可选择文件或目录；拉取时此处为本地保存位置。", 12, "TextSecondaryBrush", FontWeights.Normal);
-            local.Children.Add(localHint);
-            var push = Ui.Button("推送到设备", true);
-            push.Margin = new Thickness(0, 22, 0, 0);
-            push.Width = 140;
-            push.Click += async delegate { await PushAsync(); };
-            local.Children.Add(push);
-            var verify = Ui.Button("校验文件", false);
-            verify.Margin = new Thickness(0, 10, 0, 0);
-            verify.Width = 140;
-            verify.Click += async delegate { await VerifyAsync(); };
-            local.Children.Add(verify);
-            var localPanel = Ui.Panel(local, new Thickness(0, 0, 12, 0));
-            body.Children.Add(localPanel);
-
-            var remote = new Grid();
-            remote.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            remote.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            remote.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-            remote.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            remote.Children.Add(Ui.Text("Android 设备", 16, "TextPrimaryBrush", FontWeights.SemiBold));
-            var remoteRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 14, 0, 10) };
-            _remotePath = Ui.Input("/sdcard/", 360);
-            var browse = Ui.Button("浏览", false);
-            browse.Click += async delegate { await BrowseRemoteAsync(); };
-            remoteRow.Children.Add(_remotePath);
-            remoteRow.Children.Add(browse);
-            Grid.SetRow(remoteRow, 1);
-            remote.Children.Add(remoteRow);
-            _remoteList = new ListBox { FontFamily = new FontFamily("Consolas"), FontSize = 12, MinHeight = 210 };
-            _remoteList.SetResourceReference(Control.BackgroundProperty, "SurfaceAltBrush");
-            _remoteList.SetResourceReference(Control.ForegroundProperty, "TextPrimaryBrush");
-            _remoteList.SetResourceReference(Control.BorderBrushProperty, "BorderBrush");
-            _remoteList.MouseDoubleClick += delegate
-            {
-                string item = _remoteList.SelectedItem as string;
-                if (!string.IsNullOrWhiteSpace(item)) Clipboard.SetText(item);
-            };
-            Grid.SetRow(_remoteList, 2);
-            remote.Children.Add(_remoteList);
-            var pull = Ui.Button("拉取到本地", true);
-            pull.Margin = new Thickness(0, 12, 0, 0);
-            pull.Width = 140;
-            pull.Click += async delegate { await PullAsync(); };
-            Grid.SetRow(pull, 3);
-            remote.Children.Add(pull);
-            var remotePanel = Ui.Panel(remote, new Thickness(0));
-            Grid.SetColumn(remotePanel, 1);
-            body.Children.Add(remotePanel);
-            Grid.SetRow(body, 1);
-            root.Children.Add(body);
-
-            var overlay = new StackPanel { VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(20), IsHitTestVisible = false };
-            _progress = new ProgressBar { Height = 4, IsIndeterminate = true, Visibility = Visibility.Collapsed };
-            _progress.SetResourceReference(ProgressBar.ForegroundProperty, "AccentBrush");
-            _result = Ui.Text("", 11, "TextSecondaryBrush", FontWeights.Normal);
-            _result.Margin = new Thickness(0, 5, 0, 0);
-            overlay.Children.Add(_progress);
-            overlay.Children.Add(_result);
-            Grid.SetRow(overlay, 1);
-            root.Children.Add(overlay);
+            var root = Ui.LoadView("FilesPage");
             Content = root;
+            _localPath = Ui.Find<TextBox>(root, "LocalPath");
+            _localPath.Text = _state.Settings.DefaultFolder;
+            _remotePath = Ui.Find<TextBox>(root, "RemotePath");
+            _remoteList = Ui.Find<ListBox>(root, "RemoteList");
+            _result = Ui.Find<TextBlock>(root, "Result");
+            _progress = Ui.Find<ProgressBar>(root, "Progress");
+            Ui.Find<Button>(root, "ChooseFile").Click += delegate { ChooseLocalFile(); };
+            Ui.Find<Button>(root, "ChooseFolder").Click += delegate { ChooseLocalFolder(); };
+            Ui.Find<Button>(root, "Push").Click += async delegate { await PushAsync(); };
+            Ui.Find<Button>(root, "Pull").Click += async delegate { await PullAsync(); };
+            Ui.Find<Button>(root, "Verify").Click += async delegate { await VerifyAsync(); };
+            Ui.Find<Button>(root, "Browse").Click += async delegate { await BrowseRemoteAsync(); };
+            _remoteList.MouseDoubleClick += delegate { var item = _remoteList.SelectedItem as string; if (!string.IsNullOrWhiteSpace(item)) Clipboard.SetText(item); };
         }
 
         private void ChooseLocalFile()
@@ -357,62 +237,19 @@ namespace XMG_ADB
 
         public PackagesPage()
         {
-            var root = new Grid { Margin = Ui.PagePadding };
-            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-            var heading = new StackPanel();
-            Ui.Heading("应用管理", "查询、启动、停止、卸载和清除应用数据。危险操作会要求确认。", heading);
-            root.Children.Add(heading);
-            var toolbar = new StackPanel { Orientation = Orientation.Horizontal };
-            _search = Ui.Input("搜索包名", 260);
-            _search.TextChanged += delegate { ApplyFilter(); };
-            _systemApps = Ui.Check("包含系统应用");
-            var refresh = Ui.Button("刷新列表", true);
-            refresh.Click += async delegate { await RefreshAsync(); };
-            toolbar.Children.Add(_search);
-            toolbar.Children.Add(_systemApps);
-            toolbar.Children.Add(refresh);
-            var toolPanel = Ui.Panel(toolbar, new Thickness(0, 0, 0, 12));
-            Grid.SetRow(toolPanel, 1);
-            root.Children.Add(toolPanel);
-
-            var body = new Grid();
-            body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(330) });
-            _packages = new ListBox { FontFamily = new FontFamily("Consolas"), FontSize = 12, Margin = new Thickness(0, 0, 12, 0) };
-            _packages.SetResourceReference(Control.BackgroundProperty, "SurfaceBrush");
-            _packages.SetResourceReference(Control.ForegroundProperty, "TextPrimaryBrush");
-            _packages.SetResourceReference(Control.BorderBrushProperty, "BorderBrush");
-            _packages.SelectionChanged += async delegate { await LoadPackageDetailAsync(); };
-            body.Children.Add(_packages);
-            var actions = new StackPanel();
-            actions.Children.Add(Ui.Text("应用操作", 16, "TextPrimaryBrush", FontWeights.SemiBold));
-            _detail = Ui.Text("选择一个包名。", 12, "TextSecondaryBrush", FontWeights.Normal);
-            _detail.Margin = new Thickness(0, 14, 0, 18);
-            _detail.FontFamily = new FontFamily("Consolas");
-            actions.Children.Add(_detail);
-            foreach (Tuple<string, Func<Task>> action in new[]
-            {
-                Tuple.Create<string, Func<Task>>("启动应用", LaunchAsync),
-                Tuple.Create<string, Func<Task>>("强制停止", ForceStopAsync),
-                Tuple.Create<string, Func<Task>>("清除数据", ClearDataAsync),
-                Tuple.Create<string, Func<Task>>("卸载应用", UninstallAsync)
-            })
-            {
-                var button = Ui.Button(action.Item1, action.Item1 == "启动应用");
-                button.Margin = new Thickness(0, 0, 0, 8);
-                button.Width = 130;
-                Func<Task> handler = action.Item2;
-                button.Click += async delegate { await handler(); };
-                actions.Children.Add(button);
-            }
-            var actionPanel = Ui.Panel(actions, new Thickness(0));
-            Grid.SetColumn(actionPanel, 1);
-            body.Children.Add(actionPanel);
-            Grid.SetRow(body, 2);
-            root.Children.Add(body);
+            var root = Ui.LoadView("PackagesPage");
             Content = root;
+            _search = Ui.Find<TextBox>(root, "Search");
+            _packages = Ui.Find<ListBox>(root, "Packages");
+            _systemApps = Ui.Find<CheckBox>(root, "SystemApps");
+            _detail = Ui.Find<TextBlock>(root, "Detail");
+            _search.TextChanged += delegate { ApplyFilter(); };
+            _packages.SelectionChanged += async delegate { if (_packages.SelectedItem != null) await LoadPackageDetailAsync(); };
+            Ui.Find<Button>(root, "Refresh").Click += async delegate { await RefreshAsync(); };
+            Ui.Find<Button>(root, "Launch").Click += async delegate { await LaunchAsync(); };
+            Ui.Find<Button>(root, "Stop").Click += async delegate { await ForceStopAsync(); };
+            Ui.Find<Button>(root, "ClearData").Click += async delegate { await ClearDataAsync(); };
+            Ui.Find<Button>(root, "Uninstall").Click += async delegate { await UninstallAsync(); };
         }
 
         private List<string> _allPackages = new List<string>();
