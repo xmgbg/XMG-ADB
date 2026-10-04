@@ -37,198 +37,44 @@ namespace XMG_ADB
 
         public ToolsPage()
         {
-            var root = new Grid { Margin = Ui.PagePadding };
-            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-            var heading = new StackPanel();
-            Ui.Heading("工具与诊断", "截图录屏、性能监控、诊断导出、脚本预设和 scrcpy 集成。", heading);
-            root.Children.Add(heading);
-            var tabs = new TabControl();
-            _tabs = tabs;
-            tabs.SetResourceReference(Control.BackgroundProperty, "SurfaceBrush");
-            tabs.SetResourceReference(Control.ForegroundProperty, "TextPrimaryBrush");
-            tabs.Items.Add(new TabItem { Header = "截图与录屏", Content = BuildCaptureTab() });
-            tabs.Items.Add(new TabItem { Header = "性能监控", Content = BuildPerformanceTab() });
-            tabs.Items.Add(new TabItem { Header = "诊断导出", Content = BuildDiagnosticsTab() });
-            tabs.Items.Add(new TabItem { Header = "批量脚本", Content = BuildScriptsTab() });
-            tabs.Items.Add(new TabItem { Header = "设备镜像", Content = BuildScrcpyTab() });
-            Grid.SetRow(tabs, 1);
-            root.Children.Add(tabs);
+            var root = Ui.LoadView("ToolsPage");
             Content = root;
-        }
-
-        private UIElement BuildCaptureTab()
-        {
-            var panel = new StackPanel { Margin = new Thickness(22) };
-            panel.Children.Add(Ui.Text("保存位置", 15, "TextPrimaryBrush", FontWeights.SemiBold));
-            var folderRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 12, 0, 24) };
-            _captureFolder = Ui.Input(_state.Settings.DefaultFolder, 470);
-            var choose = Ui.Button("选择目录", false);
-            choose.Click += delegate
+            _tabs = Ui.Find<TabControl>(root, "Tabs");
+            _captureFolder = Ui.Find<TextBox>(root, "CaptureFolder");
+            _recordRemote = Ui.Find<TextBox>(root, "RecordRemote");
+            _captureStatus = Ui.Find<TextBlock>(root, "CaptureStatus");
+            _performancePackage = Ui.Find<TextBox>(root, "PerformancePackage");
+            _performanceOutput = Ui.Find<TextBox>(root, "PerformanceOutput");
+            _scriptPreset = Ui.Find<ComboBox>(root, "ScriptPreset");
+            _scriptEditor = Ui.Find<TextBox>(root, "ScriptEditor");
+            _scriptAllDevices = Ui.Find<CheckBox>(root, "ScriptAllDevices");
+            _scriptOutput = Ui.Find<TextBox>(root, "ScriptOutput");
+            _scrcpyPath = Ui.Find<TextBox>(root, "ScrcpyPath");
+            _captureFolder.Text = _state.Settings.DefaultFolder;
+            _scrcpyPath.Text = _state.Settings.ScrcpyPath;
+            foreach (string item in new[] { "设备概览", "网络诊断", "存储检查", "最近错误日志", "自定义" }) _scriptPreset.Items.Add(item);
+            _scriptPreset.SelectionChanged += delegate { ApplyScriptPreset(); };
+            _scriptPreset.SelectedIndex = 0;
+            Ui.Find<Button>(root, "ChooseFolder").Click += delegate
             {
                 var dialog = new Forms.FolderBrowserDialog { SelectedPath = Directory.Exists(_captureFolder.Text) ? _captureFolder.Text : _state.Settings.DefaultFolder };
                 if (dialog.ShowDialog() == Forms.DialogResult.OK) _captureFolder.Text = dialog.SelectedPath;
             };
-            folderRow.Children.Add(_captureFolder);
-            folderRow.Children.Add(choose);
-            panel.Children.Add(folderRow);
-
-            var screenshot = Ui.Button("截取当前屏幕", true);
-            screenshot.Width = 160;
-            screenshot.Click += async delegate { await ScreenshotAsync(); };
-            panel.Children.Add(screenshot);
-
-            var divider = new Border { Height = 1, Margin = new Thickness(0, 26, 0, 22) };
-            divider.SetResourceReference(Border.BackgroundProperty, "BorderBrush");
-            panel.Children.Add(divider);
-            panel.Children.Add(Ui.Text("屏幕录制", 15, "TextPrimaryBrush", FontWeights.SemiBold));
-            var recordRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 12, 0, 14) };
-            _recordRemote = Ui.Input("/sdcard/e300-screen.mp4", 360);
-            var start = Ui.Button("开始录制", true);
-            start.Click += delegate { StartRecording(); };
-            var stop = Ui.Button("停止并拉取", false);
-            stop.Click += async delegate { await StopRecordingAsync(); };
-            recordRow.Children.Add(_recordRemote);
-            recordRow.Children.Add(start);
-            recordRow.Children.Add(stop);
-            panel.Children.Add(recordRow);
-            _captureStatus = Ui.Text("录屏最长 180 秒，停止后自动拉取到保存目录。", 12, "TextSecondaryBrush", FontWeights.Normal);
-            panel.Children.Add(_captureStatus);
-            return new ScrollViewer { Content = panel, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
-        }
-
-        private UIElement BuildPerformanceTab()
-        {
-            var panel = new Grid { Margin = new Thickness(22) };
-            panel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            panel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-            var toolbar = new StackPanel { Orientation = Orientation.Horizontal };
-            _performancePackage = Ui.Input("可选包名", 240);
-            var start = Ui.Button("开始监控", true);
-            start.Click += async delegate { await StartPerformanceAsync(); };
-            var stop = Ui.Button("停止", false);
-            stop.Click += delegate { StopPerformance(); };
-            toolbar.Children.Add(_performancePackage);
-            toolbar.Children.Add(start);
-            toolbar.Children.Add(stop);
-            panel.Children.Add(toolbar);
-            _performanceOutput = new TextBox
-            {
-                IsReadOnly = true,
-                AcceptsReturn = true,
-                TextWrapping = TextWrapping.NoWrap,
-                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
-                FontFamily = new FontFamily("Consolas"),
-                FontSize = 12,
-                Margin = new Thickness(0, 16, 0, 0),
-                Padding = new Thickness(12)
-            };
-            _performanceOutput.SetResourceReference(Control.BackgroundProperty, "LogBackgroundBrush");
-            _performanceOutput.SetResourceReference(Control.ForegroundProperty, "LogTextBrush");
-            _performanceOutput.SetResourceReference(Control.BorderBrushProperty, "BorderBrush");
-            Grid.SetRow(_performanceOutput, 1);
-            panel.Children.Add(_performanceOutput);
-            return panel;
-        }
-
-        private UIElement BuildDiagnosticsTab()
-        {
-            var panel = new StackPanel { Margin = new Thickness(22) };
-            panel.Children.Add(Ui.Text("诊断资料", 15, "TextPrimaryBrush", FontWeights.SemiBold));
-            var note = Ui.Text("快速快照会收集设备属性、电量、存储、网络和最近错误日志。完整 Bugreport 可能需要数分钟。", 12, "TextSecondaryBrush", FontWeights.Normal);
-            note.Margin = new Thickness(0, 8, 0, 20);
-            panel.Children.Add(note);
-            var snapshot = Ui.Button("导出快速快照", true);
-            snapshot.Width = 160;
-            snapshot.Margin = new Thickness(0, 0, 0, 10);
-            snapshot.Click += async delegate { await ExportSnapshotAsync(); };
-            panel.Children.Add(snapshot);
-            var bugreport = Ui.Button("生成完整 Bugreport", false);
-            bugreport.Width = 180;
-            bugreport.Margin = new Thickness(0, 0, 0, 10);
-            bugreport.Click += async delegate { await ExportBugreportAsync(); };
-            panel.Children.Add(bugreport);
-            var copy = Ui.Button("复制设备属性", false);
-            copy.Width = 160;
-            copy.Click += async delegate { await CopyPropertiesAsync(); };
-            panel.Children.Add(copy);
-            return panel;
-        }
-
-        private UIElement BuildScriptsTab()
-        {
-            var panel = new Grid { Margin = new Thickness(22) };
-            panel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            panel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-            panel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(130) });
-            var toolbar = new StackPanel { Orientation = Orientation.Horizontal };
-            _scriptPreset = Ui.Combo(230);
-            foreach (string item in new[] { "设备概览", "网络诊断", "存储检查", "最近错误日志", "自定义" }) _scriptPreset.Items.Add(item);
-            _scriptPreset.SelectedIndex = 0;
-            _scriptPreset.SelectionChanged += delegate { ApplyScriptPreset(); };
-            _scriptAllDevices = Ui.Check("在全部设备上执行");
-            var run = Ui.Button("执行脚本", true);
-            run.Click += async delegate { await RunScriptAsync(); };
-            toolbar.Children.Add(_scriptPreset);
-            toolbar.Children.Add(_scriptAllDevices);
-            toolbar.Children.Add(run);
-            panel.Children.Add(toolbar);
-            _scriptEditor = new TextBox
-            {
-                AcceptsReturn = true,
-                AcceptsTab = true,
-                FontFamily = new FontFamily("Consolas"),
-                FontSize = 12,
-                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
-                Margin = new Thickness(0, 14, 0, 12),
-                Padding = new Thickness(12)
-            };
-            _scriptEditor.SetResourceReference(Control.StyleProperty, "InputStyle");
-            Grid.SetRow(_scriptEditor, 1);
-            panel.Children.Add(_scriptEditor);
-            _scriptOutput = new TextBox
-            {
-                IsReadOnly = true,
-                AcceptsReturn = true,
-                FontFamily = new FontFamily("Consolas"),
-                FontSize = 11,
-                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                Padding = new Thickness(10)
-            };
-            _scriptOutput.SetResourceReference(Control.BackgroundProperty, "LogBackgroundBrush");
-            _scriptOutput.SetResourceReference(Control.ForegroundProperty, "LogTextBrush");
-            Grid.SetRow(_scriptOutput, 2);
-            panel.Children.Add(_scriptOutput);
-            ApplyScriptPreset();
-            return panel;
-        }
-
-        private UIElement BuildScrcpyTab()
-        {
-            var panel = new StackPanel { Margin = new Thickness(22) };
-            panel.Children.Add(Ui.Text("设备镜像", 15, "TextPrimaryBrush", FontWeights.SemiBold));
-            var note = Ui.Text("scrcpy 是可选外部组件。指定 scrcpy.exe 后，可对当前设备启动低延迟镜像和控制。", 12, "TextSecondaryBrush", FontWeights.Normal);
-            note.Margin = new Thickness(0, 8, 0, 18);
-            panel.Children.Add(note);
-            var row = new StackPanel { Orientation = Orientation.Horizontal };
-            _scrcpyPath = Ui.Input(_state.Settings.ScrcpyPath, 470);
-            var browse = Ui.Button("选择 scrcpy", false);
-            browse.Click += delegate
+            Ui.Find<Button>(root, "ChooseScrcpy").Click += delegate
             {
                 var dialog = new Forms.OpenFileDialog { Filter = "scrcpy 可执行文件 (scrcpy.exe)|scrcpy.exe|可执行文件 (*.exe)|*.exe" };
                 if (dialog.ShowDialog() == Forms.DialogResult.OK) _scrcpyPath.Text = dialog.FileName;
             };
-            row.Children.Add(_scrcpyPath);
-            row.Children.Add(browse);
-            panel.Children.Add(row);
-            var launch = Ui.Button("启动设备镜像", true);
-            launch.Width = 160;
-            launch.Margin = new Thickness(0, 18, 0, 0);
-            launch.Click += delegate { LaunchScrcpy(); };
-            panel.Children.Add(launch);
-            return panel;
+            Ui.Find<Button>(root, "Screenshot").Click += async delegate { await ScreenshotAsync(); };
+            Ui.Find<Button>(root, "RecordStart").Click += delegate { StartRecording(); };
+            Ui.Find<Button>(root, "RecordStop").Click += async delegate { await StopRecordingAsync(); };
+            Ui.Find<Button>(root, "MonitorStart").Click += async delegate { await StartPerformanceAsync(); };
+            Ui.Find<Button>(root, "MonitorStop").Click += delegate { StopPerformance(); };
+            Ui.Find<Button>(root, "Snapshot").Click += async delegate { await ExportSnapshotAsync(); };
+            Ui.Find<Button>(root, "Bugreport").Click += async delegate { await ExportBugreportAsync(); };
+            Ui.Find<Button>(root, "CopyProperties").Click += async delegate { await CopyPropertiesAsync(); };
+            Ui.Find<Button>(root, "RunScript").Click += async delegate { await RunScriptAsync(); };
+            Ui.Find<Button>(root, "LaunchMirror").Click += delegate { LaunchScrcpy(); };
         }
 
         private DeviceInfo RequireDevice(string action)
