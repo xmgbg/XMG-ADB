@@ -1,16 +1,53 @@
 <Grid xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Margin="28,24">
- <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
- <StackPanel><TextBlock Text="文件传输" Style="{DynamicResource PageTitle}"/><TextBlock Text="在本地与设备之间传输文件，浏览目录并校验 SHA-256。" Style="{DynamicResource Subtitle}"/></StackPanel>
- <Grid Grid.Row="1"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-  <Border Style="{DynamicResource Card}" Margin="0,0,16,0"><ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel>
-   <TextBlock Text="本地路径" Style="{DynamicResource SectionTitle}"/><TextBox x:Name="LocalPath" AutomationProperties.Name="本地路径"/><WrapPanel Margin="0,12,0,0"><Button x:Name="ChooseFile" Content="选择文件"/><Button x:Name="ChooseFolder" Content="选择目录"/></WrapPanel>
-   <TextBlock Text="推送时选择文件或目录；拉取时填写本地保存目录。" Style="{DynamicResource Subtitle}"/>
-   <WrapPanel><Button x:Name="Push" Content="推送到设备" Style="{DynamicResource PrimaryButtonStyle}"/><Button x:Name="Verify" Content="校验文件"/></WrapPanel>
-  </StackPanel></ScrollViewer></Border>
-  <Border Grid.Column="1" Style="{DynamicResource Card}"><DockPanel>
-   <StackPanel DockPanel.Dock="Top"><TextBlock Text="设备路径" Style="{DynamicResource SectionTitle}"/><TextBox x:Name="RemotePath" Text="/sdcard/" AutomationProperties.Name="设备路径"/><WrapPanel Margin="0,12,0,4"><Button x:Name="Browse" Content="浏览目录"/><Button x:Name="Pull" Content="拉取到本地"/></WrapPanel></StackPanel>
-   <ListBox x:Name="RemoteList" FontFamily="Consolas" AutomationProperties.Name="设备目录内容" ToolTip="双击复制目录行"/>
-  </DockPanel></Border>
- </Grid>
- <StackPanel Grid.Row="2" Margin="0,14,0,0"><ProgressBar x:Name="Progress" Height="4" IsIndeterminate="True" Visibility="Collapsed"/><ScrollViewer MaxHeight="130" VerticalScrollBarVisibility="Auto"><TextBlock x:Name="Result" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,8,0,0"/></ScrollViewer></StackPanel>
+  <Grid.RowDefinitions>
+    <RowDefinition Height="Auto" />
+    <RowDefinition Height="*" />
+    <RowDefinition Height="Auto" />
+  </Grid.RowDefinitions>
+  <StackPanel>
+    <TextBlock Text="文件传输" Style="{DynamicResource PageTitle}" />
+    <TextBlock Text="在本地与设备之间传输文件，浏览目录并校验 SHA-256。" Style="{DynamicResource Subtitle}" />
+  </StackPanel>
+  <Grid Grid.Row="1">
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="*" />
+      <ColumnDefinition Width="*" />
+    </Grid.ColumnDefinitions>
+    <Border Style="{DynamicResource Card}" Margin="0,0,16,0">
+      <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel>
+          <TextBlock Text="本地路径" Style="{DynamicResource SectionTitle}" />
+          <TextBox x:Name="LocalPath" AutomationProperties.Name="本地路径" />
+          <WrapPanel Margin="0,12,0,0">
+            <Button x:Name="ChooseFile" Content="选择文件" />
+            <Button x:Name="ChooseFolder" Content="选择目录" />
+          </WrapPanel>
+          <TextBlock Text="推送时选择文件或目录；拉取时填写本地保存目录。" Style="{DynamicResource Subtitle}" />
+          <WrapPanel>
+            <Button x:Name="Push" Content="推送到设备" Style="{DynamicResource PrimaryButtonStyle}" />
+            <Button x:Name="Verify" Content="校验文件" />
+          </WrapPanel>
+        </StackPanel>
+      </ScrollViewer>
+    </Border>
+    <Border Grid.Column="1" Style="{DynamicResource Card}">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Top">
+          <TextBlock Text="设备路径" Style="{DynamicResource SectionTitle}" />
+          <TextBox x:Name="RemotePath" Text="/sdcard/" AutomationProperties.Name="设备路径" />
+          <WrapPanel Margin="0,12,0,4">
+            <Button x:Name="Browse" Content="浏览目录" />
+            <Button x:Name="Pull" Content="拉取到本地" />
+          </WrapPanel>
+        </StackPanel>
+        <ListBox x:Name="RemoteList" FontFamily="Consolas" AutomationProperties.Name="设备目录内容" ToolTip="双击复制目录行" />
+      </DockPanel>
+    </Border>
+  </Grid>
+  <StackPanel Grid.Row="2" Margin="0,14,0,0">
+    <ProgressBar x:Name="Progress" Height="4" IsIndeterminate="True" Visibility="Collapsed" />
+    <ScrollViewer MaxHeight="130" VerticalScrollBarVisibility="Auto">
+      <TextBlock x:Name="Result" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,8,0,0" />
+    </ScrollViewer>
+  </StackPanel>
 </Grid>

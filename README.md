@@ -113,6 +113,16 @@ PASS 清理不完整文件
 SELFTEST PASS
 ```
 
+界面检查会验证全部 XAML 页面、工具标签、浅深主题、两种窗口尺寸和快捷入口：
+
+```powershell
+.\dist\XMG_ADB.Tests.exe /uitest
+# 可选：将实际 WPF 渲染图保存到指定目录
+.\dist\XMG_ADB.Tests.exe /uitest .\dist\ui-preview
+```
+
+界面检查不连接 Android 设备，也不会保存测试主题。真实设备上的安装、传输、录屏等功能仍需单独验证。
+
 ## 🧩 项目架构
 
 ```text
@@ -138,11 +148,15 @@ XMG-ADB/
 ├── src/
 │   ├── Program.cs                    # 程序入口与自检
 │   ├── MainWindow.cs                 # 主窗口、导航与主题
+│   ├── Views/                       # 主窗口及各功能页的 XAML 布局
+│   ├── Styles/Controls.xaml         # 控件模板、字体层级与共享样式
+│   ├── OverviewPage.cs              # 当前设备概览与快捷入口
+│   ├── UiSelfTest.cs                # 页面加载、主题和布局渲染检查
 │   ├── Core.cs                       # ADB、设置、设备与操作记录核心逻辑
 │   ├── PagesDevicesLog.cs            # 设备管理与 Logcat
 │   ├── PagesAppsFiles.cs             # APK、文件与应用管理
 │   ├── PagesToolsHistorySettings.cs  # 工具、历史和设置
-│   └── Ui.cs                         # 通用 WPF 控件与样式
+│   └── Ui.cs                         # XAML 视图加载与界面辅助方法
 ├── dist/                             # 本地构建产物（不提交到源码仓库）
 ├── app.manifest                      # Windows 清单与 DPI 配置
 ├── XMG_ADB.csproj                    # MSBuild 项目文件

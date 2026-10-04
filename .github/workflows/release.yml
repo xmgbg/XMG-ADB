@@ -24,6 +24,9 @@ jobs:
         run: |
           .\build.ps1 -Console
           .\dist\XMG_ADB.Tests.exe /selftest
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          .\dist\XMG_ADB.Tests.exe /uitest
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           .\build.ps1
 
       - name: Create GitHub release

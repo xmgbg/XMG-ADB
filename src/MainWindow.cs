@@ -30,17 +30,17 @@ namespace XMG_ADB
             _navButtons = new Dictionary<string, RadioButton>();
             Title = "XMG_ADB";
             Width = 1366;
-            Height = 820;
+            Height = 900;
             MinWidth = 1100;
             MinHeight = 680;
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
-            FontFamily = new FontFamily("Segoe UI");
+            FontFamily = new FontFamily("Microsoft YaHei UI");
             UseLayoutRounding = true;
             SnapsToDevicePixels = true;
 
             Resources.MergedDictionaries.Add((ResourceDictionary)Application.LoadComponent(new Uri("/" + typeof(Ui).Assembly.GetName().Name + ";component/src/Styles/Controls.xaml", UriKind.Relative)));
             Resources["StatusBrushConverter"] = new StatusBrushConverter();
-            ApplyTheme(_state.Settings.Theme);
+            SetTheme(_state.Settings.Theme, false);
             var root = Ui.LoadView("MainWindow");
             Content = root;
             _content = Ui.Find<ContentControl>(root, "PageContent");
@@ -69,6 +69,8 @@ namespace XMG_ADB
             var settings = Ui.Find<RadioButton>(root, "SettingsNav");
             settings.Click += delegate { Navigate("设置"); };
             _navButtons["设置"] = settings;
+            UpdateHeader();
+            _statusText.Text = _state.StatusText;
 
             _state.SelectedDeviceChanged += OnSelectedDeviceChanged;
             _state.DevicesChanged += OnDevicesChanged;
@@ -86,6 +88,9 @@ namespace XMG_ADB
             };
             Closed += delegate
             {
+                _state.SelectedDeviceChanged -= OnSelectedDeviceChanged;
+                _state.DevicesChanged -= OnDevicesChanged;
+                _state.StatusChanged -= OnStatusChanged;
                 foreach (UserControl page in _pages.Values)
                 {
                     var disposable = page as IDisposable;
@@ -96,6 +101,11 @@ namespace XMG_ADB
 
         public void ApplyTheme(string theme)
         {
+            SetTheme(theme, true);
+        }
+
+        internal void SetTheme(string theme, bool save)
+        {
             bool dark = string.Equals(theme, "Dark", StringComparison.OrdinalIgnoreCase);
             Resources["BackgroundBrush"] = Brush(dark ? "#11151C" : "#F4F6F9");
             Resources["SurfaceBrush"] = Brush(dark ? "#191F29" : "#FFFFFF");
@@ -104,7 +114,7 @@ namespace XMG_ADB
             Resources["TextSecondaryBrush"] = Brush(dark ? "#9AA8B8" : "#667085");
             Resources["ComboForegroundBrush"] = Brush("#172033");
             Resources["BorderBrush"] = Brush(dark ? "#303A48" : "#DCE1E8");
-            Resources["AccentBrush"] = Brush(dark ? "#6E8BFF" : "#3767D8");
+            Resources["AccentBrush"] = Brush("#2563EB");
             Resources["AccentHoverBrush"] = Brush(dark ? "#8199FF" : "#2E59BD");
             Resources["OnAccentBrush"] = Brush("#FFFFFF");
             Resources["SuccessBrush"] = Brush(dark ? "#52C77A" : "#238636");
@@ -112,8 +122,11 @@ namespace XMG_ADB
             Resources["DangerBrush"] = Brush(dark ? "#FF7B72" : "#C9362B");
             Resources["LogBackgroundBrush"] = Brush(dark ? "#0C1016" : "#151A22");
             Resources["LogTextBrush"] = Brush("#D8DEE9");
-            _state.Settings.Theme = dark ? "Dark" : "Light";
-            _state.Settings.Save();
+            if (save)
+            {
+                _state.Settings.Theme = dark ? "Dark" : "Light";
+                _state.Settings.Save();
+            }
         }
 
         public void Navigate(string name)

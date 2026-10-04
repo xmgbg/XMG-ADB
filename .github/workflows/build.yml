@@ -25,6 +25,10 @@ jobs:
         shell: pwsh
         run: .\dist\XMG_ADB.Tests.exe /selftest
 
+      - name: Check XAML pages and themes
+        shell: pwsh
+        run: .\dist\XMG_ADB.Tests.exe /uitest
+
       - name: Build desktop application
         shell: pwsh
         run: .\build.ps1

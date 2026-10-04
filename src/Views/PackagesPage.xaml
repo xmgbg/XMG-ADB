@@ -1,7 +1,41 @@
 <Grid xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Margin="28,24">
- <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
- <StackPanel><TextBlock Text="应用管理" Style="{DynamicResource PageTitle}"/><TextBlock Text="查询与管理设备应用，清除数据和卸载操作需要确认。" Style="{DynamicResource Subtitle}"/></StackPanel>
- <Border Grid.Row="1" Style="{DynamicResource Card}" Margin="0,0,0,16"><WrapPanel><StackPanel Margin="0,0,16,0"><TextBlock Text="搜索包名" Margin="0,0,0,6"/><TextBox x:Name="Search" Width="260"/></StackPanel><CheckBox x:Name="SystemApps" Content="包含系统应用" VerticalAlignment="Bottom" Margin="0,0,16,10"/><Button x:Name="Refresh" Content="刷新列表" Style="{DynamicResource PrimaryButtonStyle}" VerticalAlignment="Bottom" Margin="0"/></WrapPanel></Border>
- <Grid Grid.Row="2"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="300"/></Grid.ColumnDefinitions><ListBox x:Name="Packages" FontFamily="Consolas" Margin="0,0,16,0" AutomationProperties.Name="应用包列表"/>
- <Border Grid.Column="1" Style="{DynamicResource Card}"><ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel><TextBlock Text="应用操作" Style="{DynamicResource SectionTitle}"/><TextBlock x:Name="Detail" Text="刷新列表后选择一个应用。" TextWrapping="Wrap" Margin="0,0,0,20"/><Button x:Name="Launch" Content="启动应用" Style="{DynamicResource PrimaryButtonStyle}"/><Button x:Name="Stop" Content="强制停止"/><Border Height="1" Background="{DynamicResource BorderBrush}" Margin="0,12,0,20"/><Button x:Name="ClearData" Content="清除数据" Foreground="{DynamicResource DangerBrush}"/><Button x:Name="Uninstall" Content="卸载应用" Foreground="{DynamicResource DangerBrush}"/></StackPanel></ScrollViewer></Border></Grid>
+  <Grid.RowDefinitions>
+    <RowDefinition Height="Auto" />
+    <RowDefinition Height="Auto" />
+    <RowDefinition Height="*" />
+  </Grid.RowDefinitions>
+  <StackPanel>
+    <TextBlock Text="应用管理" Style="{DynamicResource PageTitle}" />
+    <TextBlock Text="查询与管理设备应用，清除数据和卸载操作需要确认。" Style="{DynamicResource Subtitle}" />
+  </StackPanel>
+  <Border Grid.Row="1" Style="{DynamicResource Card}" Margin="0,0,0,16">
+    <WrapPanel>
+      <StackPanel Margin="0,0,16,0">
+        <TextBlock Text="搜索包名" Margin="0,0,0,6" />
+        <TextBox x:Name="Search" Width="260" />
+      </StackPanel>
+      <CheckBox x:Name="SystemApps" Content="包含系统应用" VerticalAlignment="Bottom" Margin="0,0,16,10" />
+      <Button x:Name="Refresh" Content="刷新列表" Style="{DynamicResource PrimaryButtonStyle}" VerticalAlignment="Bottom" Margin="0" />
+    </WrapPanel>
+  </Border>
+  <Grid Grid.Row="2">
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="*" />
+      <ColumnDefinition Width="300" />
+    </Grid.ColumnDefinitions>
+    <ListBox x:Name="Packages" FontFamily="Consolas" Margin="0,0,16,0" AutomationProperties.Name="应用包列表" />
+    <Border Grid.Column="1" Style="{DynamicResource Card}">
+      <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel>
+          <TextBlock Text="应用操作" Style="{DynamicResource SectionTitle}" />
+          <TextBlock x:Name="Detail" Text="刷新列表后选择一个应用。" TextWrapping="Wrap" Margin="0,0,0,20" />
+          <Button x:Name="Launch" Content="启动应用" Style="{DynamicResource PrimaryButtonStyle}" />
+          <Button x:Name="Stop" Content="强制停止" />
+          <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="0,12,0,20" />
+          <Button x:Name="ClearData" Content="清除数据" Foreground="{DynamicResource DangerBrush}" />
+          <Button x:Name="Uninstall" Content="卸载应用" Foreground="{DynamicResource DangerBrush}" />
+        </StackPanel>
+      </ScrollViewer>
+    </Border>
+  </Grid>
 </Grid>

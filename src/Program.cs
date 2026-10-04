@@ -16,6 +16,8 @@ namespace XMG_ADB
         {
             int? fixtureResult = TestFixture.TryRun(args);
             if (fixtureResult.HasValue) return fixtureResult.Value;
+            if (args.Length > 0 && args[0] == "/uitest")
+                return UiSelfTest.Run(args.Length > 1 ? args[1] : null);
             if (args.Any(delegate(string arg) { return string.Equals(arg, "/selftest", StringComparison.OrdinalIgnoreCase); }))
                 return SelfTest.Run();
 

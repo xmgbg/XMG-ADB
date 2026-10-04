@@ -1,7 +1,30 @@
 <Grid xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Margin="28,24">
- <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="3*"/><RowDefinition Height="Auto"/><RowDefinition Height="2*"/></Grid.RowDefinitions>
- <StackPanel><TextBlock Text="操作记录" Style="{DynamicResource PageTitle}"/><TextBlock Text="查看任务执行结果，选择一条记录查看原始输出。" Style="{DynamicResource Subtitle}"/></StackPanel>
- <WrapPanel Grid.Row="1" Margin="0,0,0,12"><Button x:Name="Export" Content="导出记录" Style="{DynamicResource PrimaryButtonStyle}"/><Button x:Name="Clear" Content="清空记录" Foreground="{DynamicResource DangerBrush}"/></WrapPanel>
- <ListView x:Name="History" Grid.Row="2"><ListView.View><GridView><GridViewColumn Header="时间" Width="140" DisplayMemberBinding="{Binding TimeText}"/><GridViewColumn Header="操作" Width="180" DisplayMemberBinding="{Binding Action}"/><GridViewColumn Header="目标设备" Width="230" DisplayMemberBinding="{Binding Device}"/><GridViewColumn Header="结果" Width="90" DisplayMemberBinding="{Binding Status}"/><GridViewColumn Header="耗时" Width="100" DisplayMemberBinding="{Binding DurationText}"/></GridView></ListView.View></ListView>
- <TextBlock Grid.Row="3" Text="原始输出" Margin="0,16,0,8"/><TextBox x:Name="Detail" Grid.Row="4" Style="{DynamicResource ConsoleText}" IsReadOnly="True" TextWrapping="Wrap" Text="选择记录查看详情。"/>
+  <Grid.RowDefinitions>
+    <RowDefinition Height="Auto" />
+    <RowDefinition Height="Auto" />
+    <RowDefinition Height="3*" />
+    <RowDefinition Height="Auto" />
+    <RowDefinition Height="2*" />
+  </Grid.RowDefinitions>
+  <StackPanel>
+    <TextBlock Text="操作记录" Style="{DynamicResource PageTitle}" />
+    <TextBlock Text="查看任务执行结果，选择一条记录查看原始输出。" Style="{DynamicResource Subtitle}" />
+  </StackPanel>
+  <WrapPanel Grid.Row="1" Margin="0,0,0,12">
+    <Button x:Name="Export" Content="导出记录" Style="{DynamicResource PrimaryButtonStyle}" />
+    <Button x:Name="Clear" Content="清空记录" Foreground="{DynamicResource DangerBrush}" />
+  </WrapPanel>
+  <ListView x:Name="History" Grid.Row="2">
+    <ListView.View>
+      <GridView>
+        <GridViewColumn Header="时间" Width="140" DisplayMemberBinding="{Binding TimeText}" />
+        <GridViewColumn Header="操作" Width="180" DisplayMemberBinding="{Binding Action}" />
+        <GridViewColumn Header="目标设备" Width="230" DisplayMemberBinding="{Binding Device}" />
+        <GridViewColumn Header="结果" Width="90" DisplayMemberBinding="{Binding Status}" />
+        <GridViewColumn Header="耗时" Width="100" DisplayMemberBinding="{Binding DurationText}" />
+      </GridView>
+    </ListView.View>
+  </ListView>
+  <TextBlock Grid.Row="3" Text="原始输出" Margin="0,16,0,8" />
+  <TextBox x:Name="Detail" Grid.Row="4" Style="{DynamicResource ConsoleText}" IsReadOnly="True" TextWrapping="Wrap" Text="选择记录查看详情。" />
 </Grid>
