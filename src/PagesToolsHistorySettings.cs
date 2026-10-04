@@ -347,59 +347,21 @@ namespace XMG_ADB
 
         public HistoryPage()
         {
-            var root = new Grid { Margin = Ui.PagePadding };
-            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-            var heading = new StackPanel();
-            Ui.Heading("操作记录", "查看连接、安装、传输和诊断任务的执行结果与原始输出。", heading);
-            root.Children.Add(heading);
-            var toolbar = new StackPanel { Orientation = Orientation.Horizontal };
-            var export = Ui.Button("导出记录", true);
-            export.Click += delegate { Export(); };
-            var clear = Ui.Button("清空记录", false);
-            clear.Click += delegate
-            {
-                if (MessageBox.Show("确定清空全部操作记录？", "清空记录", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes) _state.ClearHistory();
-            };
-            toolbar.Children.Add(export);
-            toolbar.Children.Add(clear);
-            var toolPanel = Ui.Panel(toolbar, new Thickness(0, 0, 0, 12));
-            Grid.SetRow(toolPanel, 1);
-            root.Children.Add(toolPanel);
-            var body = new Grid();
-            body.RowDefinitions.Add(new RowDefinition { Height = new GridLength(3, GridUnitType.Star) });
-            body.RowDefinitions.Add(new RowDefinition { Height = new GridLength(2, GridUnitType.Star) });
-            _list = new ListView { ItemsSource = _state.Operations };
-            _list.SetResourceReference(Control.BackgroundProperty, "SurfaceBrush");
-            _list.SetResourceReference(Control.ForegroundProperty, "TextPrimaryBrush");
-            _list.SetResourceReference(Control.BorderBrushProperty, "BorderBrush");
-            var view = new GridView();
-            view.Columns.Add(new GridViewColumn { Header = "时间", Width = 130, DisplayMemberBinding = new Binding("TimeText") });
-            view.Columns.Add(new GridViewColumn { Header = "操作", Width = 170, DisplayMemberBinding = new Binding("Action") });
-            view.Columns.Add(new GridViewColumn { Header = "目标设备", Width = 250, DisplayMemberBinding = new Binding("Device") });
-            view.Columns.Add(new GridViewColumn { Header = "结果", Width = 90, DisplayMemberBinding = new Binding("Status") });
-            view.Columns.Add(new GridViewColumn { Header = "耗时", Width = 100, DisplayMemberBinding = new Binding("DurationText") });
-            _list.View = view;
+            var root = Ui.LoadView("HistoryPage");
+            Content = root;
+            _list = Ui.Find<ListView>(root, "History");
+            _detail = Ui.Find<TextBox>(root, "Detail");
+            _list.ItemsSource = _state.Operations;
             _list.SelectionChanged += delegate
             {
                 var item = _list.SelectedItem as OperationItem;
-                if (item != null) _detail.Text = item.Detail;
+                _detail.Text = item == null ? "选择记录查看详情。" : item.Detail;
             };
-            body.Children.Add(_list);
-            _detail = new TextBox
+            Ui.Find<Button>(root, "Export").Click += delegate { Export(); };
+            Ui.Find<Button>(root, "Clear").Click += delegate
             {
-                IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap,
-                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                FontFamily = new FontFamily("Consolas"), FontSize = 11, Padding = new Thickness(12), Margin = new Thickness(0, 12, 0, 0)
+                if (MessageBox.Show("确定清空全部操作记录？", "清空记录", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes) _state.ClearHistory();
             };
-            _detail.SetResourceReference(Control.BackgroundProperty, "LogBackgroundBrush");
-            _detail.SetResourceReference(Control.ForegroundProperty, "LogTextBrush");
-            Grid.SetRow(_detail, 1);
-            body.Children.Add(_detail);
-            Grid.SetRow(body, 2);
-            root.Children.Add(body);
-            Content = root;
         }
 
         private void Export()
@@ -438,89 +400,44 @@ namespace XMG_ADB
         {
             _applyTheme = applyTheme;
             _updateHeader = updateHeader;
-            var root = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
-            var content = new StackPanel { Margin = Ui.PagePadding, MaxWidth = 900, HorizontalAlignment = HorizontalAlignment.Left };
-            Ui.Heading("设置", "配置 ADB、scrcpy、默认目录、日志容量和全局主题。", content);
-
-            var form = new Grid();
-            form.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(180) });
-            form.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            form.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(120) });
-            for (int i = 0; i < 5; i++) form.RowDefinitions.Add(new RowDefinition { Height = new GridLength(58) });
-
-            _adbPath = AddPathRow(form, 0, "ADB 可执行文件", _state.Settings.AdbPath, "选择 ADB", "adb.exe");
-            _scrcpyPath = AddPathRow(form, 1, "scrcpy 可执行文件", _state.Settings.ScrcpyPath, "选择 scrcpy", "scrcpy.exe");
-            _defaultFolder = AddFolderRow(form, 2, "默认保存目录", _state.Settings.DefaultFolder);
-            AddLabel(form, 3, "日志缓冲行数");
-            _logBuffer = Ui.Input(_state.Settings.LogBuffer.ToString(), 180);
-            Grid.SetRow(_logBuffer, 3); Grid.SetColumn(_logBuffer, 1); form.Children.Add(_logBuffer);
-            AddLabel(form, 4, "应用主题");
-            _theme = Ui.Combo(180);
-            _theme.Items.Add("Light"); _theme.Items.Add("Dark");
+            var root = Ui.LoadView("SettingsPage");
+            Content = root;
+            _adbPath = Ui.Find<TextBox>(root, "AdbPath");
+            _scrcpyPath = Ui.Find<TextBox>(root, "ScrcpyPath");
+            _defaultFolder = Ui.Find<TextBox>(root, "DefaultFolder");
+            _logBuffer = Ui.Find<TextBox>(root, "LogBuffer");
+            _theme = Ui.Find<ComboBox>(root, "Theme");
+            _status = Ui.Find<TextBlock>(root, "Status");
+            _adbPath.Text = _state.Settings.AdbPath;
+            _scrcpyPath.Text = _state.Settings.ScrcpyPath;
+            _defaultFolder.Text = _state.Settings.DefaultFolder;
+            _logBuffer.Text = _state.Settings.LogBuffer.ToString();
+            _theme.Items.Add("Light");
+            _theme.Items.Add("Dark");
             _theme.SelectedItem = _state.Settings.Theme;
-            Grid.SetRow(_theme, 4); Grid.SetColumn(_theme, 1); form.Children.Add(_theme);
-            content.Children.Add(Ui.Panel(form, new Thickness(0, 0, 0, 16)));
-
-            var actions = new StackPanel { Orientation = Orientation.Horizontal };
-            var save = Ui.Button("保存设置", true);
-            save.Click += async delegate { await SaveAsync(); };
-            var detect = Ui.Button("重新检测 ADB", false);
-            detect.Click += async delegate
+            _status.Text = _state.Adb.IsAvailable ? "当前 ADB：" + _state.Adb.ExecutablePath : "未找到 ADB，请指定 adb.exe。";
+            Ui.Find<Button>(root, "ChooseAdb").Click += delegate { ChooseExecutable(_adbPath, "adb.exe"); };
+            Ui.Find<Button>(root, "ChooseScrcpy").Click += delegate { ChooseExecutable(_scrcpyPath, "scrcpy.exe"); };
+            Ui.Find<Button>(root, "ChooseFolder").Click += delegate
+            {
+                var dialog = new Forms.FolderBrowserDialog { SelectedPath = Directory.Exists(_defaultFolder.Text) ? _defaultFolder.Text : _state.Settings.DefaultFolder };
+                if (dialog.ShowDialog() == Forms.DialogResult.OK) _defaultFolder.Text = dialog.SelectedPath;
+            };
+            Ui.Find<Button>(root, "Save").Click += async delegate { await SaveAsync(); };
+            Ui.Find<Button>(root, "Detect").Click += async delegate
             {
                 _state.Adb.Detect();
                 _updateHeader();
                 _status.Text = _state.Adb.IsAvailable ? "检测到：" + _state.Adb.ExecutablePath : "未找到 adb.exe";
                 if (_state.Adb.IsAvailable) await _state.RefreshDevicesAsync();
             };
-            var open = Ui.Button("打开数据目录", false);
-            open.Click += delegate { Process.Start("explorer.exe", AdbClient.Quote(_state.Settings.DataDirectory)); };
-            actions.Children.Add(save); actions.Children.Add(detect); actions.Children.Add(open);
-            content.Children.Add(actions);
-            _status = Ui.Text(_state.Adb.IsAvailable ? "当前 ADB：" + _state.Adb.ExecutablePath : "未找到 ADB，请指定 adb.exe。", 12, "TextSecondaryBrush", FontWeights.Normal);
-            _status.Margin = new Thickness(0, 16, 0, 0);
-            content.Children.Add(_status);
-            root.Content = content;
-            Content = root;
+            Ui.Find<Button>(root, "OpenFolder").Click += delegate { Process.Start("explorer.exe", AdbClient.Quote(_state.Settings.DataDirectory)); };
         }
 
-        private TextBox AddPathRow(Grid grid, int row, string label, string value, string buttonText, string expectedName)
+        private static void ChooseExecutable(TextBox input, string expectedName)
         {
-            AddLabel(grid, row, label);
-            var input = Ui.Input(value, 520);
-            input.HorizontalAlignment = HorizontalAlignment.Left;
-            Grid.SetRow(input, row); Grid.SetColumn(input, 1); grid.Children.Add(input);
-            var button = Ui.Button(buttonText, false);
-            Grid.SetRow(button, row); Grid.SetColumn(button, 2);
-            button.Click += delegate
-            {
-                var dialog = new Forms.OpenFileDialog { Filter = expectedName + "|" + expectedName + "|可执行文件 (*.exe)|*.exe" };
-                if (dialog.ShowDialog() == Forms.DialogResult.OK) input.Text = dialog.FileName;
-            };
-            grid.Children.Add(button);
-            return input;
-        }
-
-        private TextBox AddFolderRow(Grid grid, int row, string label, string value)
-        {
-            AddLabel(grid, row, label);
-            var input = Ui.Input(value, 520);
-            input.HorizontalAlignment = HorizontalAlignment.Left;
-            Grid.SetRow(input, row); Grid.SetColumn(input, 1); grid.Children.Add(input);
-            var button = Ui.Button("选择目录", false);
-            Grid.SetRow(button, row); Grid.SetColumn(button, 2);
-            button.Click += delegate
-            {
-                var dialog = new Forms.FolderBrowserDialog { SelectedPath = Directory.Exists(input.Text) ? input.Text : _state.Settings.DefaultFolder };
-                if (dialog.ShowDialog() == Forms.DialogResult.OK) input.Text = dialog.SelectedPath;
-            };
-            grid.Children.Add(button);
-            return input;
-        }
-
-        private static void AddLabel(Grid grid, int row, string value)
-        {
-            var label = Ui.Text(value, 13, "TextPrimaryBrush", FontWeights.Normal);
-            Grid.SetRow(label, row); Grid.SetColumn(label, 0); grid.Children.Add(label);
+            var dialog = new Forms.OpenFileDialog { Filter = expectedName + "|" + expectedName + "|可执行文件 (*.exe)|*.exe" };
+            if (dialog.ShowDialog() == Forms.DialogResult.OK) input.Text = dialog.FileName;
         }
 
         private async Task SaveAsync()
