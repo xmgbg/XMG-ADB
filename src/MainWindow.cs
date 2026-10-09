@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Shapes;
 
 namespace XMG_ADB
@@ -18,6 +19,7 @@ namespace XMG_ADB
         private readonly Ellipse _adbDot;
         private readonly TextBlock _statusText;
         private readonly ProgressBar _busyBar;
+        private readonly Border _startupOverlay;
         private readonly Dictionary<string, UserControl> _pages;
         private readonly Dictionary<string, RadioButton> _navButtons;
         private string _activePage;
@@ -50,6 +52,7 @@ namespace XMG_ADB
             _adbDot = Ui.Find<Ellipse>(root, "AdbDot");
             _statusText = Ui.Find<TextBlock>(root, "StatusText");
             _busyBar = Ui.Find<ProgressBar>(root, "BusyBar");
+            _startupOverlay = Ui.Find<Border>(root, "StartupOverlay");
             Ui.Find<Button>(root, "ThemeButton").Click += delegate { ApplyTheme(_state.Settings.Theme == "Dark" ? "Light" : "Dark"); };
             var navigation = Ui.Find<StackPanel>(root, "Navigation");
             string[] names = { "设备概览", "设备", "实时日志", "APK 安装", "文件传输", "应用管理", "工具与诊断", "操作记录" };
@@ -84,6 +87,7 @@ namespace XMG_ADB
             {
                 Navigate("设备概览");
                 UpdateHeader();
+                PlayStartupAnimation(root);
                 if (_state.Adb.IsAvailable) await _state.RefreshDevicesAsync();
             };
             Closed += delegate
@@ -96,6 +100,45 @@ namespace XMG_ADB
                     var disposable = page as IDisposable;
                     if (disposable != null) disposable.Dispose();
                 }
+            };
+        }
+
+        private void PlayStartupAnimation(FrameworkElement root)
+        {
+            if (!SystemParameters.ClientAreaAnimation)
+            {
+                _startupOverlay.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            var logo = Ui.Find<Image>(root, "StartupLogo");
+            var title = Ui.Find<TextBlock>(root, "StartupTitle");
+            var subtitle = Ui.Find<TextBlock>(root, "StartupSubtitle");
+            var progress = Ui.Find<Border>(root, "StartupProgress");
+            var easing = new CubicEase { EasingMode = EasingMode.EaseOut };
+
+            logo.BeginAnimation(OpacityProperty, Animation(0, 1, 260, 40, easing));
+            ((TranslateTransform)logo.RenderTransform).BeginAnimation(TranslateTransform.YProperty, Animation(14, 0, 360, 40, easing));
+            title.BeginAnimation(OpacityProperty, Animation(0, 1, 240, 180, easing));
+            subtitle.BeginAnimation(OpacityProperty, Animation(0, 1, 220, 260, easing));
+            ((ScaleTransform)progress.RenderTransform).BeginAnimation(ScaleTransform.ScaleXProperty, Animation(0, 1, 560, 220, easing));
+
+            var fade = Animation(1, 0, 220, 760, easing);
+            fade.Completed += delegate
+            {
+                _startupOverlay.Visibility = Visibility.Collapsed;
+                _startupOverlay.BeginAnimation(OpacityProperty, null);
+            };
+            _startupOverlay.BeginAnimation(OpacityProperty, fade);
+        }
+
+        private static DoubleAnimation Animation(double from, double to, int durationMs, int delayMs, IEasingFunction easing)
+        {
+            return new DoubleAnimation(from, to, TimeSpan.FromMilliseconds(durationMs))
+            {
+                BeginTime = TimeSpan.FromMilliseconds(delayMs),
+                EasingFunction = easing,
+                FillBehavior = FillBehavior.HoldEnd
             };
         }
 

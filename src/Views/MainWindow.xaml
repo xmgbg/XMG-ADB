@@ -60,4 +60,24 @@
     <TextBlock x:Name="StatusText" VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
     <ProgressBar x:Name="BusyBar" Width="130" Height="3" HorizontalAlignment="Right" IsIndeterminate="True" Visibility="Collapsed" />
   </Grid>
+  <Border x:Name="StartupOverlay" Grid.ColumnSpan="2" Grid.RowSpan="3" Background="#10233F" Panel.ZIndex="100" AutomationProperties.Name="XMG_ADB 正在启动">
+    <Grid>
+      <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="300">
+        <Image x:Name="StartupLogo" Source="../../assets/xmg-adb-logo-v2.png" Width="92" Height="92" HorizontalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5">
+          <Image.RenderTransform>
+            <TranslateTransform Y="14" />
+          </Image.RenderTransform>
+        </Image>
+        <TextBlock x:Name="StartupTitle" Text="XMG_ADB" Foreground="White" FontSize="30" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,18,0,0" Opacity="0" />
+        <TextBlock x:Name="StartupSubtitle" Text="设备运维工作台" Foreground="#AEC1DB" FontSize="14" HorizontalAlignment="Center" Margin="0,8,0,0" Opacity="0" />
+        <Border Width="180" Height="3" Background="#29425F" CornerRadius="2" Margin="0,28,0,0">
+          <Border x:Name="StartupProgress" Background="#4D8DFF" CornerRadius="2" RenderTransformOrigin="0,0.5">
+            <Border.RenderTransform>
+              <ScaleTransform ScaleX="0" />
+            </Border.RenderTransform>
+          </Border>
+        </Border>
+      </StackPanel>
+    </Grid>
+  </Border>
 </Grid>
