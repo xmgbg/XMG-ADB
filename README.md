@@ -127,20 +127,20 @@ SELFTEST PASS
 
 ## 🧩 项目架构
 
-```text
-WPF 界面层
-  XAML Views / Shared Styles / MainWindow / Overview / Feature Pages
-                              │
-                              ▼
-应用状态与任务编排
-  AppState / SettingsStore / Operation History
-                              │
-                              ▼
-ADB 进程适配层
-  AdbClient / Process / Timeout / UTF-8 Output
-                              │
-                              ▼
-adb.exe ───────────────► Android Devices
+```mermaid
+flowchart TB
+    UI["<b>WPF 界面层</b><br/>XAML Views · Shared Styles · MainWindow<br/>Overview · Feature Pages"]
+    APP["<b>应用状态与任务编排</b><br/>AppState · SettingsStore · Operation History"]
+    ADB["<b>ADB 进程适配层</b><br/>AdbClient · Process · Timeout · UTF-8 Output"]
+    EXE["adb.exe"]
+    DEVICE["Android Devices"]
+
+    UI --> APP --> ADB --> EXE --> DEVICE
+
+    classDef layer fill:#EFF6FF,stroke:#2563EB,stroke-width:1.5px,color:#0F172A;
+    classDef runtime fill:#0F2A4D,stroke:#3B82F6,stroke-width:1.5px,color:#FFFFFF;
+    class UI,APP,ADB layer;
+    class EXE,DEVICE runtime;
 ```
 
 ### 目录结构
